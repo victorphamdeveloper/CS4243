@@ -1,9 +1,10 @@
 import sys
+from videoGenerator import *
 from PyQt4 import QtGui, QtCore
 
 class CS4243Project(QtGui.QWidget):
 	# Constant Declaration
-	DIRECTIONS = ["North", "South", "West", "East"]
+	DIRECTIONS = ["North", "South", "West", "East", "Upwards", "Downwards"]
 
 	def mousePressEvent(self, event):
 		super(CS4243Project, self).mousePressEvent(event)
@@ -19,7 +20,7 @@ class CS4243Project(QtGui.QWidget):
 		return
 
 	def drawPoints(self):
-		imagePixmap = QtGui.QPixmap('project.jpeg')
+		imagePixmap = QtGui.QPixmap('project.jpg')
    		imagePixmap = imagePixmap.scaledToHeight(self.screenSize.height(), QtCore.Qt.SmoothTransformation)
 		painter = QtGui.QPainter(imagePixmap)
 		painter.setPen(QtGui.QPen(QtCore.Qt.red, 3, QtCore.Qt.SolidLine))
@@ -70,7 +71,7 @@ class CS4243Project(QtGui.QWidget):
 
 	def initImage(self):
 		labelImage = QtGui.QLabel()
-   		imagePixmap = QtGui.QPixmap('project.jpeg')
+   		imagePixmap = QtGui.QPixmap('project.jpg')
    		imagePixmap = imagePixmap.scaledToHeight(self.screenSize.height(), QtCore.Qt.SmoothTransformation)
    		labelImage.setPixmap(imagePixmap)
    		labelImage.setFixedSize(imagePixmap.size())
@@ -86,22 +87,23 @@ class CS4243Project(QtGui.QWidget):
 		vbox.setAlignment(QtCore.Qt.AlignTop)
 		vbox.setSpacing(30.0)
 
+		# Group Selection
 		groupComboBox = QtGui.QComboBox()
 		groupComboBox.addItems(['Group 1'])
 		groupComboBox.setMinimumWidth(self.sideBarSize.width() * 3 / 4.0)
-		
 		addButton = QtGui.QPushButton("+")
 		addButton.clicked.connect(self.addButtonClicked)
-		
 		hbox = QtGui.QHBoxLayout()
 		hbox.setAlignment(QtCore.Qt.AlignCenter)
 		hbox.setSpacing(5.0)
 		hbox.addWidget(groupComboBox)
 		hbox.addWidget(addButton)
-		
 		vbox.addLayout(hbox)
+		
+		# Group Info
 		groupInfo = QtGui.QVBoxLayout()
 		groupInfo.setSpacing(10.0)
+		groupInfo.setAlignment(QtCore.Qt.AlignTop)
 		vbox.addLayout(groupInfo)
 
 		#Assign variables
@@ -110,6 +112,27 @@ class CS4243Project(QtGui.QWidget):
 		self.groupComboBox.currentIndexChanged['int'].connect(self.updateGroup)               
 		self.updateGroup(0)
 		return 
+
+	def generateButtonClicked(self):
+		groupsData = {}
+		for key in self.groups.keys():
+			groupsData[key] = {}
+			data = groupsData[key]
+			group = self.groups[key]
+			data['direction'] = group['direction']
+			data['points'] = []
+			groupPoints = group['points']
+			for i in range(groupPoints.rowCount()):
+				xCoord = int(str(groupPoints.item(i, 0).text()))
+				yCoord = int(str(groupPoints.item(i, 1).text()))
+				zCoord = int(str(groupPoints.item(i, 2).text()))
+				data['points'].append((xCoord, yCoord, zCoord))
+		
+		videoGenerator = VideoGenerator()
+		videoGenerator.processData(groupsData)
+		return
+
+
 
 	def updateGroup(self, changedIndex):
 		currentGroup = self.groups[str(self.groupComboBox.currentText())]
@@ -134,9 +157,15 @@ class CS4243Project(QtGui.QWidget):
 		table = QtGui.QTableView()
 		table.setModel(model)
 		table.verticalHeader().setVisible(False)
+		table.setMaximumHeight((3/4.0) * self.sideBarSize.height())
 		for i in range(3):
 			table.setColumnWidth(i, self.sideBarSize.width() / 3.0)
 		groupInfo.addWidget(table)
+
+		# Process Button
+		processButton = QtGui.QPushButton("Generate Video")
+		processButton.clicked.connect(self.generateButtonClicked)
+		groupInfo.addWidget(processButton)
 
 		return
 
@@ -165,7 +194,7 @@ class CS4243Project(QtGui.QWidget):
 	def changeCoords(self, item):
 		self.drawPoints()
 		return
-
+		
 
 def main():
 	app = QtGui.QApplication(sys.argv)
