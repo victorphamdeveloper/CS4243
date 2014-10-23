@@ -4,7 +4,7 @@ from PyQt4 import QtGui, QtCore
 
 class CS4243Project(QtGui.QWidget):
 	# Constant Declaration
-	DIRECTIONS = ["North", "South", "West", "East", "Upwards", "Downwards"]
+	DIRECTIONS = ["None", "North", "South", "West", "East", "Upwards", "Downwards"]
 
 	def mousePressEvent(self, event):
 		super(CS4243Project, self).mousePressEvent(event)
@@ -20,16 +20,40 @@ class CS4243Project(QtGui.QWidget):
 		return
 
 	def drawPoints(self):
+		chosenElement = str(self.groupComboBox.currentText())
+		if(chosenElement == 'All'):
+			self.drawPointsForAll()
+		else:
+			self.drawPointsForGroup(chosenElement)
+		return
+
+	def drawPointsForAll(self):
 		imagePixmap = QtGui.QPixmap('project.jpg')
    		imagePixmap = imagePixmap.scaledToHeight(self.screenSize.height(), QtCore.Qt.SmoothTransformation)
 		painter = QtGui.QPainter(imagePixmap)
-		painter.setPen(QtGui.QPen(QtCore.Qt.red, 3, QtCore.Qt.SolidLine))
 		for key in self.groups.keys():
-			groupPoints = self.groups[key]['points']
+			currentGroup = self.groups[key]
+			painter.setPen(QtGui.QPen(QtGui.QColor(255, 0, 0), 3, QtCore.Qt.SolidLine))
+			groupPoints = currentGroup['points']
 			for i in range(0, groupPoints.rowCount()):
 				xCoord = int(str(groupPoints.item(i, 0).text()))
 				yCoord = int(str(groupPoints.item(i, 1).text()))
 				painter.drawPoint(xCoord, yCoord)
+		painter.end()
+		self.image.setPixmap(imagePixmap)
+		return
+
+	def drawPointsForGroup(self, group):
+		imagePixmap = QtGui.QPixmap('project.jpg')
+   		imagePixmap = imagePixmap.scaledToHeight(self.screenSize.height(), QtCore.Qt.SmoothTransformation)
+		painter = QtGui.QPainter(imagePixmap)
+		currentGroup = self.groups[group]
+		painter.setPen(QtGui.QPen(QtGui.QColor(255, 0, 0), 3, QtCore.Qt.SolidLine))
+		groupPoints = currentGroup['points']
+		for i in range(0, groupPoints.rowCount()):
+			xCoord = int(str(groupPoints.item(i, 0).text()))
+			yCoord = int(str(groupPoints.item(i, 1).text()))
+			painter.drawPoint(xCoord, yCoord)
 		painter.end()
 		self.image.setPixmap(imagePixmap)
 		return
@@ -43,7 +67,7 @@ class CS4243Project(QtGui.QWidget):
 		self.screenSize = QtGui.QDesktopWidget().screenGeometry() 
 		self.groups = 	{
 						'Group 1': {
-									'direction':'North',
+									'direction':'None',
 									'points': QtGui.QStandardItemModel(0, 3)					
 									}
 						}
@@ -89,7 +113,7 @@ class CS4243Project(QtGui.QWidget):
 
 		# Group Selection
 		groupComboBox = QtGui.QComboBox()
-		groupComboBox.addItems(['Group 1'])
+		groupComboBox.addItems(['Group 1', 'All'])
 		groupComboBox.setMinimumWidth(self.sideBarSize.width() * 3 / 4.0)
 		addButton = QtGui.QPushButton("+")
 		addButton.clicked.connect(self.addButtonClicked)
@@ -135,37 +159,40 @@ class CS4243Project(QtGui.QWidget):
 
 
 	def updateGroup(self, changedIndex):
-		currentGroup = self.groups[str(self.groupComboBox.currentText())]
-		
 		# Clear group info
 		groupInfo = self.sideBar.itemAt(1)
 		self.clearLayout(groupInfo)
 
-		# Add direction
-		hbox = QtGui.QHBoxLayout()
-		hbox.addWidget(QtGui.QLabel("Direction: "))
-		directionComboBox = QtGui.QComboBox()
-		directionComboBox.addItems(self.DIRECTIONS)
-		directionComboBox.setCurrentIndex(directionComboBox.findText(currentGroup['direction']))
-		directionComboBox.currentIndexChanged['int'].connect(self.updateDirection)
-		hbox.addWidget(directionComboBox)
-		groupInfo.addLayout(hbox)
+		if(str(self.groupComboBox.currentText()) != 'All'):
+			currentGroup = self.groups[str(self.groupComboBox.currentText())]
 
-		# Add points
-		model = currentGroup['points']
-		model.setHorizontalHeaderLabels(QtCore.QStringList(['X', 'Y', 'Z']))
-		table = QtGui.QTableView()
-		table.setModel(model)
-		table.verticalHeader().setVisible(False)
-		table.setMaximumHeight((3/4.0) * self.sideBarSize.height())
-		for i in range(3):
-			table.setColumnWidth(i, self.sideBarSize.width() / 3.0)
-		groupInfo.addWidget(table)
+			# Add direction
+			hbox = QtGui.QHBoxLayout()
+			hbox.addWidget(QtGui.QLabel("Direction: "))
+			directionComboBox = QtGui.QComboBox()
+			directionComboBox.addItems(self.DIRECTIONS)
+			directionComboBox.setCurrentIndex(directionComboBox.findText(currentGroup['direction']))
+			directionComboBox.currentIndexChanged['int'].connect(self.updateDirection)
+			hbox.addWidget(directionComboBox)
+			groupInfo.addLayout(hbox)
+
+			# Add points
+			model = currentGroup['points']
+			model.setHorizontalHeaderLabels(QtCore.QStringList(['X', 'Y', 'Z']))
+			table = QtGui.QTableView()
+			table.setModel(model)
+			table.verticalHeader().setVisible(False)
+			table.setMaximumHeight((3/4.0) * self.sideBarSize.height())
+			table.setMinimumWidth(self.sideBarSize.width() - 15)
+			for i in range(3):
+				table.setColumnWidth(i, self.sideBarSize.width() / 3.0 - 5)
+			groupInfo.addWidget(table)
 
 		# Process Button
 		processButton = QtGui.QPushButton("Generate Video")
 		processButton.clicked.connect(self.generateButtonClicked)
 		groupInfo.addWidget(processButton)
+		self.drawPoints()
 
 		return
 
@@ -186,8 +213,8 @@ class CS4243Project(QtGui.QWidget):
 
 	def addButtonClicked(self):
 		numItems = self.groupComboBox.count()
-		self.groupComboBox.addItem('Group ' + str(numItems + 1))
-		self.groups['Group ' + str(numItems + 1)] = {'direction': 'North', 'points': QtGui.QStandardItemModel(0, 3)}
+		self.groupComboBox.insertItem(self.groupComboBox.count() - 1, 'Group ' + str(numItems))
+		self.groups['Group ' + str(numItems + 1)] = {'direction': 'None', 'points': QtGui.QStandardItemModel(0, 3)}
 		self.groups['Group ' + str(numItems + 1)]['points'].itemChanged.connect(self.changeCoords)
 		return
 
