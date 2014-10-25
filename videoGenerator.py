@@ -7,5 +7,4 @@ class VideoGenerator:
 
 	def processData(self, data):
 		print "Start processing data for video generation"
-		print data
 		return

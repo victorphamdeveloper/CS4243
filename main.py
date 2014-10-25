@@ -1,5 +1,5 @@
 import sys
-from videoGenerator import *
+from pointsInterpolator import *
 from PyQt4 import QtGui, QtCore
 
 class CS4243Project(QtGui.QWidget):
@@ -33,7 +33,7 @@ class CS4243Project(QtGui.QWidget):
 		painter = QtGui.QPainter(imagePixmap)
 		for key in self.groups.keys():
 			currentGroup = self.groups[key]
-			painter.setPen(QtGui.QPen(QtGui.QColor(255, 0, 0), 3, QtCore.Qt.SolidLine))
+			painter.setPen(QtGui.QPen(QtGui.QColor(255, 0, 0), 2, QtCore.Qt.SolidLine))
 			groupPoints = currentGroup['points']
 			for i in range(0, groupPoints.rowCount()):
 				xCoord = int(str(groupPoints.item(i, 0).text()))
@@ -48,7 +48,7 @@ class CS4243Project(QtGui.QWidget):
    		imagePixmap = imagePixmap.scaledToHeight(self.screenSize.height(), QtCore.Qt.SmoothTransformation)
 		painter = QtGui.QPainter(imagePixmap)
 		currentGroup = self.groups[group]
-		painter.setPen(QtGui.QPen(QtGui.QColor(255, 0, 0), 3, QtCore.Qt.SolidLine))
+		painter.setPen(QtGui.QPen(QtGui.QColor(255, 0, 0), 2, QtCore.Qt.SolidLine))
 		groupPoints = currentGroup['points']
 		for i in range(0, groupPoints.rowCount()):
 			xCoord = int(str(groupPoints.item(i, 0).text()))
@@ -152,8 +152,8 @@ class CS4243Project(QtGui.QWidget):
 				zCoord = int(str(groupPoints.item(i, 2).text()))
 				data['points'].append((xCoord, yCoord, zCoord))
 		
-		videoGenerator = VideoGenerator()
-		videoGenerator.processData(groupsData)
+		pointsInterpolator = PointsInterpolator()
+		pointsInterpolator.interpolate(groupsData)
 		return
 
 
@@ -214,8 +214,8 @@ class CS4243Project(QtGui.QWidget):
 	def addButtonClicked(self):
 		numItems = self.groupComboBox.count()
 		self.groupComboBox.insertItem(self.groupComboBox.count() - 1, 'Group ' + str(numItems))
-		self.groups['Group ' + str(numItems + 1)] = {'direction': 'None', 'points': QtGui.QStandardItemModel(0, 3)}
-		self.groups['Group ' + str(numItems + 1)]['points'].itemChanged.connect(self.changeCoords)
+		self.groups['Group ' + str(numItems)] = {'direction': 'None', 'points': QtGui.QStandardItemModel(0, 3)}
+		self.groups['Group ' + str(numItems)]['points'].itemChanged.connect(self.changeCoords)
 		return
 
 	def changeCoords(self, item):
