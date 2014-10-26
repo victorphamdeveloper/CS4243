@@ -12,6 +12,7 @@ class PerspectiveProjector:
 		print "Constructor for class PerspectiveProjector"
 		return
 
+	# Test function
 	def processData(self, data):
 		print "Start processing data for video generation"
 		print data
@@ -23,12 +24,13 @@ class PerspectiveProjector:
 		
 		cameraPosition = [0, 0, 0]
 		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-		filteredPoints = self.filterAlignedPoints(pointDict, cameraPosition)
+		filteredPoints = self._filterAlignedPoints(pointDict, cameraPosition)
 		projectedPoints = self.performPerspective(filteredPoints, cameraPosition, orientation)
 		print projectedPoints
 		
 		return
 	
+	# Test function
 	def readColor(self, data):
 		image = cv.imread(self.IMG_NAME, cv.CV_LOAD_IMAGE_COLOR)
 		colorMappedData = copy.deepcopy(data)
@@ -39,32 +41,18 @@ class PerspectiveProjector:
 				colorMappedData[group]["points"][pointData] = image[pointData[0]][pointData[1]]
 			
 		return colorMappedData
-		
-	def interpolate(self, data):
-		pass
-	
-	def filterAlignedPoints(self, pointDict, cameraPosition):
-		filteredPointDict = pointDict
-		keys = pointDict.keys()
-		length = len(keys)
-		points = [0, 0, 0] * length
-		deletedKeys = set()
-		
-		for i in range(length):
-			points[i] = np.array(keys[i])
-			
-		for i in range(length):
-			for j in xrange(i + 1, length - 1):
-				if (keys[i] not in deletedKeys) and (keys[j] not in deletedKeys) and (self.isAligned(cameraPosition, points[i], points[j])):
-					if (la.norm(cameraPosition - points[i]) > la.norm(cameraPosition - points[j])):
-						del pointDict[keys[i]]
-						deletedKeys.add(keys[i])
-					else:
-						del pointDict[keys[j]]
-						deletedKeys.add(keys[j])  
-					
-		return filteredPointDict
-		
+
+	"""
+	Perform perspective with given camera position and its rotation 
+	on a set of points with given colours
+	* Input Format:
+	{
+		(x1, y1, z1): (r1, g1, b1),
+		(x2, y2, z2): (r2, g2, b2)
+	}
+	* Output Format:
+		2D array represent every pixel in the frame
+	"""
 	def performPerspective(self, pointDict, cameraPosition, orientation):
 		result = {}
 		for key, color in pointDict.iteritems():
@@ -79,7 +67,29 @@ class PerspectiveProjector:
 			
 		return result
 	
-	def isAligned(self, point1, point2, point3):
+	def _filterAlignedPoints(self, pointDict, cameraPosition):
+		filteredPointDict = pointDict
+		keys = pointDict.keys()
+		length = len(keys)
+		points = [0, 0, 0] * length
+		deletedKeys = set()
+		
+		for i in range(length):
+			points[i] = np.array(keys[i])
+			
+		for i in range(length):
+			for j in xrange(i + 1, length - 1):
+				if (keys[i] not in deletedKeys) and (keys[j] not in deletedKeys) and (self._isAligned(cameraPosition, points[i], points[j])):
+					if (la.norm(cameraPosition - points[i]) > la.norm(cameraPosition - points[j])):
+						del pointDict[keys[i]]
+						deletedKeys.add(keys[i])
+					else:
+						del pointDict[keys[j]]
+						deletedKeys.add(keys[j])  
+					
+		return filteredPointDict
+	
+	def _isAligned(self, point1, point2, point3):
 		vector12 = point2 - point1
 		vector13 = point3 - point1
 		crossProduct = np.cross(vector12, vector13)
