@@ -1,5 +1,6 @@
 import sys
 
+# This class is used for performing perspective projection
 class PerspectiveProjector:
 	# Constant declaration
 	IMG_NAME = "project.jpg"
