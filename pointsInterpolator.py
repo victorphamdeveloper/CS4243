@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import cv2 as cv
 
 # This class is used for interpolating points
 class PointsInterpolator:	
@@ -78,6 +79,8 @@ class PointsInterpolator:
 		a, b, c, d = group['planeFormula']
 		for x in xrange(minX, maxX + 1):
 			for y in xrange(minY, maxY + 1):
+				if(cv.pointPolygonTest(contour, (x,y), False)):
+					continue
 				if(c == 0):
 					point = (x, y, (d - a * x - b * y) / c)
 					interpolatedPoints.append((x, y, (d - a * x - b * y) / c))
