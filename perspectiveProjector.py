@@ -12,36 +12,6 @@ class PerspectiveProjector:
 		print "Constructor for class PerspectiveProjector"
 		return
 
-	# Test function
-	def processData(self, data):
-		print "Start processing data for video generation"
-		print data
-		
-		colorData = self.readColor(data)
-		pointDict = {}
-		for group, groupData in colorData.iteritems():
-			pointDict = dict(pointDict.items() + groupData["points"].items()) 
-		
-		cameraPosition = [0, 0, 0]
-		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-		filteredPoints = self._filterAlignedPoints(pointDict, cameraPosition)
-		projectedPoints = self.performPerspective(filteredPoints, cameraPosition, orientation)
-		print projectedPoints
-		
-		return
-	
-	# Test function
-	def readColor(self, data):
-		image = cv.imread(self.IMG_NAME, cv.CV_LOAD_IMAGE_COLOR)
-		colorMappedData = copy.deepcopy(data)
-		
-		for group, groupData in data.iteritems():
-			colorMappedData[group]["points"] = {}
-			for pointData in groupData["points"]:
-				colorMappedData[group]["points"][pointData] = image[pointData[0]][pointData[1]]
-			
-		return colorMappedData
-
 	"""
 	Perform perspective with given camera position and its rotation 
 	on a set of points with given colours
@@ -95,4 +65,60 @@ class PerspectiveProjector:
 		crossProduct = np.cross(vector12, vector13)
 		isPointsAligned = (np.count_nonzero(crossProduct) == 0)
 		
-		return isPointsAligned	
+		return isPointsAligned
+
+	##################### SUPPORT FUNCTIONS ##############################
+	# Function for multiplying quaternion
+	def _qualtmult(self, p, q):
+		p0 = p[0]
+		p1 = p[1]
+		p2 = p[2]
+		p3 = p[3]
+		q0 = q[0]
+		q1 = q[1]
+		q2 = q[2]
+		q3 = q[3]
+
+		# Start computing
+		out = [0, 0, 0, 0] #output array
+		out[0] = p0 * q0 - p1 * q1 - p2 * q2 - p3 * q3
+		out[1] = p0 * q1 + p1 * q0 + p2 * q3 - p3 * q2
+		out[2] = p0 * q2 - p1 * q3 + p2 * q0 + p3 * q1
+		out[3] = p0 * q3 + p1 * q2 - p2 * q1 + p3 * q0
+
+		return out
+
+	# Retrieve corresponding quaternion from angle and rotational axis
+	def _getQuaternion(self, rotationalAxis, angle):
+		cosAngle = np.cos(angle / 2.0)
+		sinAngle = np.sin(angle / 2.0) 
+		return np.array([cosAngle, 0, sinAngle, 0])
+
+	# Function to translate the camera 
+	def _translateCameraWithAngle(self, cameraPos, rotationalAxis, angle):
+		q = self._getQuaternion(rotationalAxis, angle)
+		negate_q = np.array([q[0], -q[1], -q[2], -q[3]])
+		cameraQuaternion = np.array([0, cameraPos[0], cameraPos[1], cameraPos[2]])
+		result = self._qualtmult(qualtmult(q, cameraQuaternion), negate_q)
+		return np.array([result[1], result[2], result[3]])
+
+	# Function to create rotation matrix from quaternion
+	def _quat2rot(self, q) :
+		q0 = q[0]
+		q1 = q[1]
+		q2 = q[2]
+		q3 = q[3]
+
+		#Start computing
+		out = np.zeros((3, 3))
+		out[0][0] = np.power(q0, 2) + np.power(q1, 2) - np.power(q2, 2) - np.power(q3, 2)
+		out[0][1] = 2 * (q1 * q2 - q0 * q3)
+		out[0][2] = 2 * (q1 * q3 + q0 * q2)
+		out[1][0] = 2 * (q1 * q2 + q0 * q3)
+		out[1][1] = np.power(q0, 2) + np.power(q2, 2) - np.power(q1, 2) - np.power(q3, 2)
+		out[1][2] = 2 * (q2 * q3 - q0 * q1)
+		out[2][0] = 2 * (q1 * q3 - q0 * q2)
+		out[2][1] = 2 * (q2 * q3 + q0 * q1)
+		out[2][2] = np.power(q0, 2) + np.power(q3, 2) - np.power(q1, 2) - np.power(q2, 2)
+
+		return np.matrix(out)	
