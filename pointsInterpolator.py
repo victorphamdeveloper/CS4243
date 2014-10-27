@@ -95,20 +95,30 @@ class PointsInterpolator:
 				maxZ = z
 		interpolatedPoints = []
 		a, b, c, d = group['planeFormula']
-		for x in xrange(minX, maxX + 1):
-			for y in xrange(minY, maxY + 1):
+		for x in self.drange(minX, maxX + 1, 1.0):
+			for y in self.drange(minY, maxY + 1, 1.0):
 				if(cv.pointPolygonTest(contour, (x,y), False)):
 					continue
 				if(c == 0):
 					point = (x, y, (d - a * x - b * y) / c)
 					interpolatedPoints.append((x, y, (d - a * x - b * y) / c))
 				else:
-					for z in xrange(minZ, maxZ + 1):
+					for z in self.drange(minZ, maxZ + 1, 1.0):
 						interpolatedPoints.append((x, y, z))
 		group['points'] = interpolatedPoints
-		return
+		return	
+
+	def drange(x, y, jump):
+		while x < y:
+			yield x
+			x += jump
 
 	# Fill the color for every point in each group from the data
 	def _fillColor(self, data):
+		colorData = {}
+		for key, group in data.iteritems():
+			pts = group['pts']
+			for point in pts:
+				colorData[point] = (255, 0, 0)
 
-		return
+		return colorData
