@@ -36,8 +36,8 @@ class CS4243Project(QtGui.QWidget):
 			painter.setPen(QtGui.QPen(QtGui.QColor(255, 0, 0), 2, QtCore.Qt.SolidLine))
 			groupPoints = currentGroup['points']
 			for i in range(0, groupPoints.rowCount()):
-				xCoord = int(str(groupPoints.item(i, 0).text()))
-				yCoord = int(str(groupPoints.item(i, 1).text()))
+				xCoord = float(str(groupPoints.item(i, 0).text()))
+				yCoord = float(str(groupPoints.item(i, 1).text()))
 				painter.drawPoint(xCoord, yCoord)
 		painter.end()
 		self.image.setPixmap(imagePixmap)
@@ -51,8 +51,8 @@ class CS4243Project(QtGui.QWidget):
 		painter.setPen(QtGui.QPen(QtGui.QColor(255, 0, 0), 2, QtCore.Qt.SolidLine))
 		groupPoints = currentGroup['points']
 		for i in range(0, groupPoints.rowCount()):
-			xCoord = int(str(groupPoints.item(i, 0).text()))
-			yCoord = int(str(groupPoints.item(i, 1).text()))
+			xCoord = float(str(groupPoints.item(i, 0).text()))
+			yCoord = float(str(groupPoints.item(i, 1).text()))
 			painter.drawPoint(xCoord, yCoord)
 		painter.end()
 		self.image.setPixmap(imagePixmap)
@@ -137,6 +137,7 @@ class CS4243Project(QtGui.QWidget):
 		self.updateGroup(0)
 		return 
 
+	# Main function to intialize the processing logic
 	def generateButtonClicked(self):
 		groupsData = {}
 		for key in self.groups.keys():
@@ -153,7 +154,17 @@ class CS4243Project(QtGui.QWidget):
 				data['points'].append((xCoord, yCoord, zCoord))
 		
 		pointsInterpolator = PointsInterpolator()
-		pointsInterpolator.interpolate(groupsData)
+		interpolatedData = pointsInterpolator.interpolate(groupsData)
+		'''
+		# Test Interpolated Data
+		currentGroup = self.groups[str(self.groupComboBox.currentText())]
+		currentGroup['points'] = QtGui.QStandardItemModel(0, 3)
+		for point in interpolatedData.keys():
+			currentGroup['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(point[0]))), 
+										QtGui.QStandardItem(QtCore.QString(str(point[1]))), 
+										QtGui.QStandardItem(QtCore.QString(str(point[2])))])
+		self.drawPoints()
+		'''
 		return
 
 

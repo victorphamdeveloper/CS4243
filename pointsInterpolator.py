@@ -23,8 +23,7 @@ class PointsInterpolator:
 		(x2, y2, z2): (r2, g2, b2)
 	}
 	"""	
-	def interpolate(data):
-		print "Interpolate points"
+	def interpolate(self, data):
 		self._adjustPoints(data)
 		self._interpolatePoints(data)
 		colouredData = self._fillColor(data)
@@ -32,14 +31,12 @@ class PointsInterpolator:
 
 	# Adjust data so that each group points is on the same plane
 	def _adjustPoints(self, data):
-		print "Adjust points"
 		for key, group in data.iteritems():
 			self._adjustGroup(group)
 		return
 
 	# Adjust points in a group to be on the same plane
 	def _adjustGroup(self, group):
-		print "Adjust group"
 		pts = group['points']
 		if(len(pts) < 3):
 			print "This set of points does not need adjustment"
@@ -62,25 +59,25 @@ class PointsInterpolator:
 		vector2 = [x2 - x1, y2 - y1, z2 - z1]
 		a, b, c = np.cross(vector1, vector2)
 		d = a * x1 + b * y1 + c * z1
+		print a, b, c, d
 		return (a, b, c, d)
 
 	# Interpolate points inside each group from the data
 	def _interpolatePoints(self, data):
-		print "Interpolate Points"
-		for key, group in data.itermitems():
+		for key, group in data.iteritems():
 			self._interpolateGroup(group)
 		return
 
 	# Interpolation points inside the polygon create by the corners in each group
 	def _interpolateGroup(self, group):
-		print "Interpolate group"
 		pts = group['points']
 		if(len(pts) < 3):
 			print "This set of points does not have enough points for interpolation"	
-		contour = []
-		minX = maxX = minY = maxY = minZ = maxZ = 0.0 
+		corners = []
+		maxX = maxY = maxZ = 0
+		minX = minY = minZ = sys.maxint
 		for (x, y, z) in pts:
-			contour.append((x, y))
+			corners.append((x, y))
 			if(x < minX):
 				minX = x
 			elif (x > maxX):
@@ -95,20 +92,45 @@ class PointsInterpolator:
 				maxZ = z
 		interpolatedPoints = []
 		a, b, c, d = group['planeFormula']
-		for x in xrange(minX, maxX + 1):
-			for y in xrange(minY, maxY + 1):
-				if(cv.pointPolygonTest(contour, (x,y), False)):
+		for x in self._drange(minX, maxX + 1, 1.0):
+			for y in self._drange(minY, maxY + 1, 1.0):
+				if(not self._pointInPolygon((x,y), corners)):
 					continue
-				if(c == 0):
+				if(c != 0):
 					point = (x, y, (d - a * x - b * y) / c)
 					interpolatedPoints.append((x, y, (d - a * x - b * y) / c))
 				else:
-					for z in xrange(minZ, maxZ + 1):
+					for z in self._drange(minZ, maxZ + 1, 1.0):
 						interpolatedPoints.append((x, y, z))
 		group['points'] = interpolatedPoints
-		return
+		return	
+
+	def _drange(self, x, y, jump):
+		while x < y:
+			yield x
+			x += jump
+
+	def _pointInPolygon(self, point, corners):
+		polySides = len(corners)
+		i = 0
+		j = polySides - 1
+		oddNodes= False
+		while(i < polySides):
+			if((corners[i][1] < point[1] and corners[j][1] >= point[1] 
+				or corners[j][1] < point[1] and corners[i][1] >= point[1])
+				and (corners[i][0] <= point[0] or corners[j][0] <= point[0])):
+				oddNodes = oddNodes ^ (corners[i][0] + (point[1] - corners[i][1]) / (corners[j][1] - corners[i][1]) * (corners[j][0] - corners[i][0]) < point[0])
+			j = i
+			i += 1
+
+		return oddNodes
 
 	# Fill the color for every point in each group from the data
 	def _fillColor(self, data):
+		colorData = {}
+		for key, group in data.iteritems():
+			pts = group['points']
+			for point in pts:
+				colorData[point] = (255, 0, 0)
 
-		return
+		return colorData
