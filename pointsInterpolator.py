@@ -5,7 +5,6 @@ import cv2 as cv
 # This class is used for interpolating points
 class PointsInterpolator:	
 	def __init__(self):
-		print "Constructor for class PointsInterpolator"
 		return
 	
 	"""

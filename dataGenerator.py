@@ -6,14 +6,6 @@ import codecs
 #having to create data through the interface repeatedly
 class DataGenerator:
 	def __init__(self):
-		print "Create DataGenerator object"
-		return
-
-	def initializeData(self):
-		print "Initialize data for testing"
-		return
-
-	def generateData():
 		return
 
 	def saveDataToFile(self, fileName, groups):
@@ -24,6 +16,3 @@ class DataGenerator:
 		input_file  = file(fileName, "r")
 		data = json.loads(input_file.read().decode("utf-8-sig"))
 		return data
-		
-	def test(self):
-		print 'in DataGenerator'

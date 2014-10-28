@@ -164,21 +164,16 @@ class CS4243Project(QtGui.QWidget):
 				yCoord = int(str(groupPoints.item(i, 1).text())) * self.IMAGE_ORIGINAL_HEIGHT / self.imageSize.height()
 				zCoord = int(str(groupPoints.item(i, 2).text()))
 				data['points'].append((xCoord, yCoord, zCoord))
-		
-		# Store file
-		with open('data.json', 'wb') as fp:
-			json.dump(groupsData, fp)
 
 		pointsInterpolator = PointsInterpolator()
 		interpolatedData = pointsInterpolator.interpolate(groupsData)
 		
 		perspectiveProjector = PerspectiveProjector()
-		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH / 2.0, self.IMAGE_ORIGINAL_HEIGHT, -5]
+		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH / 2.0, self.IMAGE_ORIGINAL_HEIGHT / 2.0, -5]
 		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 		results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), cameraPosition, orientation )
 		
-		imageFrame = cv2.imread("project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-		#imageFrame = np.zeros((int(self.IMAGE_ORIGINAL_HEIGHT),int(self.IMAGE_ORIGINAL_WIDTH),3), np.uint8)
+		imageFrame = np.zeros((int(self.IMAGE_ORIGINAL_HEIGHT),int(self.IMAGE_ORIGINAL_WIDTH),3), np.uint8)
 		for point, color in results.iteritems():
 			x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
 			y = int(point[1] + self.IMAGE_ORIGINAL_HEIGHT / 2.0)
