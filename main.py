@@ -3,6 +3,7 @@ import copy
 import json
 from pointsInterpolator import *
 from perspectiveProjector import *
+from dataGenerator import *
 from PyQt4 import QtGui, QtCore
 
 import cv2
@@ -26,6 +27,7 @@ class CS4243Project(QtGui.QWidget):
 										QtGui.QStandardItem(QtCore.QString(str(yCoord))), 
 										QtGui.QStandardItem(QtCore.QString(str(0)))])
 		self.drawPoints()
+
 		return
 
 	def drawPoints(self):
@@ -133,12 +135,13 @@ class CS4243Project(QtGui.QWidget):
 		hbox.addWidget(addButton)
 		vbox.addLayout(hbox)
 		
+		
 		# Group Info
 		groupInfo = QtGui.QVBoxLayout()
 		groupInfo.setSpacing(10.0)
 		groupInfo.setAlignment(QtCore.Qt.AlignTop)
 		vbox.addLayout(groupInfo)
-
+		
 		#Assign variables
 		self.sideBar = vbox
 		self.groupComboBox = groupComboBox
@@ -214,7 +217,7 @@ class CS4243Project(QtGui.QWidget):
 			table = QtGui.QTableView()
 			table.setModel(model)
 			table.verticalHeader().setVisible(False)
-			table.setMaximumHeight((3/4.0) * self.sideBarSize.height())
+			table.setMaximumHeight((2.5/4.0) * self.sideBarSize.height())
 			table.setMinimumWidth(self.sideBarSize.width() - 15)
 			for i in range(3):
 				table.setColumnWidth(i, self.sideBarSize.width() / 3.0 - 5)
@@ -224,9 +227,51 @@ class CS4243Project(QtGui.QWidget):
 		processButton = QtGui.QPushButton("Generate Video")
 		processButton.clicked.connect(self.generateButtonClicked)
 		groupInfo.addWidget(processButton)
+		
+		saveButton = QtGui.QPushButton("Save group")
+		saveButton.clicked.connect(self.saveGroup)
+		groupInfo.addWidget(saveButton)
+		
+
+		loadButton = QtGui.QPushButton("Load group")
+		loadButton.clicked.connect(self.loadGroup)
+		groupInfo.addWidget(loadButton)
 		self.drawPoints()
 
 		return
+
+	def loadGroup(self):
+		dataGenerator = DataGenerator()
+		data = dataGenerator.loadDataFromFile('data.txt')	
+		group = {'direction': 'None', 'points': QtGui.QStandardItemModel(0, 3)}
+		self.groups[str(self.groupComboBox.currentText())]['direction'] = data['direction']
+		for i in range(len(data['points'])):
+			row = []
+			for j in range(len(data['points'][i])):
+				val = QtGui.QStandardItem(QtCore.QString(data['points'][i][j]))
+				row.append(val)
+
+			self.groups[str(self.groupComboBox.currentText())]['points'].appendRow(row)
+
+		self.drawPoints()
+
+
+	def saveGroup(self):
+		currentGroup = self.groups[str(self.groupComboBox.currentText())]
+		print currentGroup
+		savedPoints = []
+		for i in range(currentGroup['points'].rowCount()):
+			points = []
+			for j in range(currentGroup['points'].columnCount()):
+				points.append(str(currentGroup['points'].item(i,j).text()))
+			savedPoints.append(points)
+
+		group = {'direction' : currentGroup['direction'], 'points' : savedPoints}
+			
+		dataGenerator = DataGenerator()
+		dataGenerator.saveDataToFile('data.txt',group)
+		
+		
 
 	def updateDirection(self, changedIndex):
 		currentGroup = self.groups[str(self.groupComboBox.currentText())]
@@ -258,6 +303,8 @@ class CS4243Project(QtGui.QWidget):
 def main():
 	app = QtGui.QApplication(sys.argv)
 	view = CS4243Project()
+	
+
 	sys.exit(app.exec_())
 
 if __name__ == '__main__':
