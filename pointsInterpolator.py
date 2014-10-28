@@ -5,7 +5,6 @@ import cv2 as cv
 # This class is used for interpolating points
 class PointsInterpolator:	
 	def __init__(self):
-		print "Constructor for class PointsInterpolator"
 		return
 	
 	"""
@@ -24,9 +23,11 @@ class PointsInterpolator:
 	}
 	"""	
 	def interpolate(self, data):
+		print "Start Performing Interpolation..."
 		self._adjustPoints(data)
 		self._interpolatePoints(data)
 		colouredData = self._fillColor(data)
+		print "Finish Performing Interpolation :)"
 		return colouredData
 
 	# Adjust data so that each group points is on the same plane
@@ -59,7 +60,6 @@ class PointsInterpolator:
 		vector2 = [x2 - x1, y2 - y1, z2 - z1]
 		a, b, c = np.cross(vector1, vector2)
 		d = a * x1 + b * y1 + c * z1
-		print a, b, c, d
 		return (a, b, c, d)
 
 	# Interpolate points inside each group from the data
@@ -77,7 +77,8 @@ class PointsInterpolator:
 		maxX = maxY = maxZ = 0
 		minX = minY = minZ = sys.maxint
 		for (x, y, z) in pts:
-			corners.append((x, y))
+			if(not (x, y) in corners):
+				corners.append((x, y))
 			if(x < minX):
 				minX = x
 			elif (x > maxX):
@@ -92,15 +93,16 @@ class PointsInterpolator:
 				maxZ = z
 		interpolatedPoints = []
 		a, b, c, d = group['planeFormula']
+		numCorners = len(corners)
 		for x in self._drange(minX, maxX + 1, 1.0):
 			for y in self._drange(minY, maxY + 1, 1.0):
-				if(not self._pointInPolygon((x,y), corners)):
+				if(c != 0 and not self._pointInPolygon((x,y), corners)):
 					continue
 				if(c != 0):
 					point = (x, y, (d - a * x - b * y) / c)
 					interpolatedPoints.append((x, y, (d - a * x - b * y) / c))
 				else:
-					for z in self._drange(minZ, maxZ + 1, 1.0):
+					for z in self._drange(minZ, maxZ, 1.0):
 						interpolatedPoints.append((x, y, z))
 		group['points'] = interpolatedPoints
 		return	
@@ -131,6 +133,15 @@ class PointsInterpolator:
 		for key, group in data.iteritems():
 			pts = group['points']
 			for point in pts:
-				colorData[point] = (255, 0, 0)
+				if(key == 'Group 1'):
+					colorData[point] = (255, 0, 0)
+				elif(key == 'Group 2'):
+					colorData[point] = (0, 255, 0)
+				elif(key == 'Group 3'):
+					colorData[point] = (0, 0, 255)
+				elif(key == 'Group 4'):
+					colorData[point] = (255, 255, 255)
+				else:
+					colorData[point] = (189, 190, 0)
 
 		return colorData
