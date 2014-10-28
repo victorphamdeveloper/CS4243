@@ -16,7 +16,7 @@ pointsInterpolator = PointsInterpolator()
 interpolatedData = pointsInterpolator.interpolate(groupsData)
 
 perspectiveProjector = PerspectiveProjector()
-cameraPosition = [IMAGE_ORIGINAL_WIDTH / 2.0, IMAGE_ORIGINAL_HEIGHT / 2.0, -5]
+cameraPosition = [IMAGE_ORIGINAL_WIDTH / 2.0, IMAGE_ORIGINAL_HEIGHT * 2 / 3.0, -5]
 orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), cameraPosition, orientation )
 
@@ -29,6 +29,7 @@ for point, color in results.iteritems():
 
 winname = "imageWin"
 win = cv.NamedWindow(winname, cv.CV_WINDOW_AUTOSIZE)
+imageFrame = cv2.resize(imageFrame, (1200, 900))
 cv2.imshow('imageWin', imageFrame)
-cv2.waitKey(10000)
+cv2.waitKey(0)
 cv.DestroyWindow(winname)

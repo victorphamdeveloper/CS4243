@@ -269,6 +269,7 @@ class CS4243Project(QtGui.QWidget):
 				groupData['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(xCoord))), 
 										QtGui.QStandardItem(QtCore.QString(str(yCoord))), 
 										QtGui.QStandardItem(QtCore.QString(str(zCoord)))])
+			groupData['points'].itemChanged.connect(self.changeCoords)
 		self.groupComboBox.currentIndexChanged['int'].connect(self.updateGroup)
 		self.drawPoints()
 
