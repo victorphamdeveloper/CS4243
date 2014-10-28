@@ -1,10 +1,19 @@
 import sys
+import copy
+import json
 from pointsInterpolator import *
+from perspectiveProjector import *
 from PyQt4 import QtGui, QtCore
+
+import cv2
+import cv2.cv as cv
+import numpy as np
 
 class CS4243Project(QtGui.QWidget):
 	# Constant Declaration
 	DIRECTIONS = ["None", "North", "South", "West", "East", "Upwards", "Downwards"]
+	IMAGE_ORIGINAL_WIDTH = 1632.0
+	IMAGE_ORIGINAL_HEIGHT = 1224.0
 
 	def mousePressEvent(self, event):
 		super(CS4243Project, self).mousePressEvent(event)
@@ -148,26 +157,38 @@ class CS4243Project(QtGui.QWidget):
 			data['points'] = []
 			groupPoints = group['points']
 			for i in range(groupPoints.rowCount()):
-				xCoord = int(str(groupPoints.item(i, 0).text()))
-				yCoord = int(str(groupPoints.item(i, 1).text()))
+				xCoord = int(str(groupPoints.item(i, 0).text())) * self.IMAGE_ORIGINAL_WIDTH / self.imageSize.width()
+				yCoord = int(str(groupPoints.item(i, 1).text())) * self.IMAGE_ORIGINAL_HEIGHT / self.imageSize.height()
 				zCoord = int(str(groupPoints.item(i, 2).text()))
 				data['points'].append((xCoord, yCoord, zCoord))
 		
+		# Store file
+		with open('data.json', 'wb') as fp:
+			json.dump(groupsData, fp)
+
 		pointsInterpolator = PointsInterpolator()
 		interpolatedData = pointsInterpolator.interpolate(groupsData)
-		'''
-		# Test Interpolated Data
-		currentGroup = self.groups[str(self.groupComboBox.currentText())]
-		currentGroup['points'] = QtGui.QStandardItemModel(0, 3)
-		for point in interpolatedData.keys():
-			currentGroup['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(point[0]))), 
-										QtGui.QStandardItem(QtCore.QString(str(point[1]))), 
-										QtGui.QStandardItem(QtCore.QString(str(point[2])))])
-		self.drawPoints()
-		'''
+		
+		perspectiveProjector = PerspectiveProjector()
+		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH / 2.0, self.IMAGE_ORIGINAL_HEIGHT, -5]
+		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+		results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), cameraPosition, orientation )
+		
+		imageFrame = cv2.imread("project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+		#imageFrame = np.zeros((int(self.IMAGE_ORIGINAL_HEIGHT),int(self.IMAGE_ORIGINAL_WIDTH),3), np.uint8)
+		for point, color in results.iteritems():
+			x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
+			y = int(point[1] + self.IMAGE_ORIGINAL_HEIGHT / 2.0)
+			if(0 <= x and x < self.IMAGE_ORIGINAL_WIDTH and 0 <= y and y < self.IMAGE_ORIGINAL_HEIGHT):
+				imageFrame[y][x] = [color[2], color[1], color[0]]
+
+		winname = "imageWin"
+		win = cv.NamedWindow(winname, cv.CV_WINDOW_AUTOSIZE)
+		cv2.imshow('imageWin', imageFrame)
+		cv2.waitKey(10000)
+		cv.DestroyWindow(winname)
+
 		return
-
-
 
 	def updateGroup(self, changedIndex):
 		# Clear group info
