@@ -16,7 +16,7 @@ class DataGenerator:
 	def generateData():
 		return
 
-	def saveDataToFile(self, , fileName, groups):
+	def saveDataToFile(self, fileName, groups):
 		with open(fileName, 'w') as outfile:
 			json.dump(groups, outfile)
 			

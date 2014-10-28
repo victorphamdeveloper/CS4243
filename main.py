@@ -229,50 +229,111 @@ class CS4243Project(QtGui.QWidget):
 		groupInfo.addWidget(processButton)
 		
 		saveButton = QtGui.QPushButton("Save group")
-		saveButton.clicked.connect(self.saveGroup)
+		saveButton.clicked.connect(self.save)
 		groupInfo.addWidget(saveButton)
 		
 
 		loadButton = QtGui.QPushButton("Load group")
-		loadButton.clicked.connect(self.loadGroup)
+		loadButton.clicked.connect(self.load)
 		groupInfo.addWidget(loadButton)
 		self.drawPoints()
 
 		return
 
-	def loadGroup(self):
+	def load(self):
+		selection = str(self.groupComboBox.currentText())
+		if(selection == 'All'):
+			self.loadForAllGroups()
+		else:
+			currentGroup = self.groups[selection]
+			self.loadGroup(currentGroup) 
+
+	def loadForAllGroups(self):
+		self.groupComboBox.currentIndexChanged['int'].disconnect(self.updateGroup)   
 		dataGenerator = DataGenerator()
-		data = dataGenerator.loadDataFromFile('data.txt')	
-		group = {'direction': 'None', 'points': QtGui.QStandardItemModel(0, 3)}
-		self.groups[str(self.groupComboBox.currentText())]['direction'] = data['direction']
-		for i in range(len(data['points'])):
-			row = []
-			for j in range(len(data['points'][i])):
-				val = QtGui.QStandardItem(QtCore.QString(data['points'][i][j]))
-				row.append(val)
-
-			self.groups[str(self.groupComboBox.currentText())]['points'].appendRow(row)
-
+		allData = dataGenerator.loadDataFromFile('allData.json')
+		numGroups = len(allData.keys())
+		self.groupComboBox.clear()
+		for i in range(numGroups):
+			self.groupComboBox.addItem('Group ' + str(i + 1))
+		self.groupComboBox.addItem('All')
+		self.groupComboBox.setCurrentIndex(self.groupComboBox.count() - 1)
+		self.groups.clear()
+		for group, data in allData.iteritems():
+			self.groups[group] = {}
+			groupData = self.groups[group]
+			groupData['direction'] = data['direction']
+			groupData['points'] = QtGui.QStandardItemModel(0, 3)
+			for i in range(len(data['points'])):
+				row = []
+				xCoord = data['points'][i][0]
+				xCoord = int(xCoord * self.imageSize.width() / self.IMAGE_ORIGINAL_WIDTH)
+				yCoord = data['points'][i][1]
+				yCoord = int(yCoord * self.imageSize.height() / self.IMAGE_ORIGINAL_HEIGHT)
+				zCoord = data['points'][i][2]
+				groupData['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(xCoord))), 
+										QtGui.QStandardItem(QtCore.QString(str(yCoord))), 
+										QtGui.QStandardItem(QtCore.QString(str(zCoord)))])
+		self.groupComboBox.currentIndexChanged['int'].connect(self.updateGroup)
 		self.drawPoints()
 
+	def loadGroup(self, currentGroup):
+		dataGenerator = DataGenerator()
+		data = dataGenerator.loadDataFromFile('groupData.json')	
+		self.groups[str(self.groupComboBox.currentText())]['direction'] = data['direction']
+		self.groups[str(self.groupComboBox.currentText())]['points'].clear()
+		for i in range(len(data['points'])):
+			row = []
+			xCoord = data['points'][i][0]
+			xCoord = int(xCoord * self.imageSize.width() / self.IMAGE_ORIGINAL_WIDTH)
+			yCoord = data['points'][i][1]
+			yCoord = int(yCoord * self.imageSize.height() / self.IMAGE_ORIGINAL_HEIGHT)
+			zCoord = data['points'][i][2]
+			self.groups[str(self.groupComboBox.currentText())]['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(xCoord))), 
+									QtGui.QStandardItem(QtCore.QString(str(yCoord))), 
+									QtGui.QStandardItem(QtCore.QString(str(zCoord)))])
+		self.drawPoints()
 
-	def saveGroup(self):
-		currentGroup = self.groups[str(self.groupComboBox.currentText())]
-		print currentGroup
+	def save(self):
+		selection = str(self.groupComboBox.currentText())
+		if(selection == 'All'):
+			self.saveForAllGroups()
+		else:
+			currentGroup = self.groups[selection]
+			self.saveGroup(currentGroup) 
+
+	def saveGroup(self, currentGroup):
 		savedPoints = []
 		for i in range(currentGroup['points'].rowCount()):
-			points = []
-			for j in range(currentGroup['points'].columnCount()):
-				points.append(str(currentGroup['points'].item(i,j).text()))
-			savedPoints.append(points)
+			xCoord = int(str(currentGroup['points'].item(i, 0).text())) * self.IMAGE_ORIGINAL_WIDTH / self.imageSize.width()
+			yCoord = int(str(currentGroup['points'].item(i, 1).text())) * self.IMAGE_ORIGINAL_HEIGHT / self.imageSize.height()
+			zCoord = int(str(currentGroup['points'].item(i, 2).text()))
+			savedPoints.append((xCoord, yCoord, zCoord))
 
 		group = {'direction' : currentGroup['direction'], 'points' : savedPoints}
 			
 		dataGenerator = DataGenerator()
-		dataGenerator.saveDataToFile('data.txt',group)
-		
-		
+		dataGenerator.saveDataToFile('groupData.json',group)
 
+	def saveForAllGroups(self):
+		groupsData = {}
+		for key in self.groups.keys():
+			groupsData[key] = {}
+			data = groupsData[key]
+			group = self.groups[key]
+			data['direction'] = group['direction']
+			data['points'] = []
+			groupPoints = group['points']
+			for i in range(groupPoints.rowCount()):
+				xCoord = int(str(groupPoints.item(i, 0).text())) * self.IMAGE_ORIGINAL_WIDTH / self.imageSize.width()
+				yCoord = int(str(groupPoints.item(i, 1).text())) * self.IMAGE_ORIGINAL_HEIGHT / self.imageSize.height()
+				zCoord = int(str(groupPoints.item(i, 2).text()))
+				data['points'].append((xCoord, yCoord, zCoord))
+
+		dataGenerator = DataGenerator()
+		dataGenerator.saveDataToFile('allData.json', groupsData)
+
+		
 	def updateDirection(self, changedIndex):
 		currentGroup = self.groups[str(self.groupComboBox.currentText())]
 		currentGroup['direction'] = self.DIRECTIONS[changedIndex]
