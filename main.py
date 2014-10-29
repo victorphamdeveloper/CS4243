@@ -23,8 +23,8 @@ class CS4243Project(QtGui.QWidget):
 		if(xCoord > self.imageSize.width()):
 			return
 		currentGroup = self.groups[str(self.groupComboBox.currentText())]
-		currentGroup['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(xCoord))), 
-										QtGui.QStandardItem(QtCore.QString(str(yCoord))), 
+		currentGroup['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(xCoord))),
+										QtGui.QStandardItem(QtCore.QString(str(yCoord))),
 										QtGui.QStandardItem(QtCore.QString(str(0)))])
 		self.drawPoints()
 
@@ -75,11 +75,11 @@ class CS4243Project(QtGui.QWidget):
 		self.initUI()
 
 	def initVariables(self):
-		self.screenSize = QtGui.QDesktopWidget().screenGeometry() 
+		self.screenSize = QtGui.QDesktopWidget().screenGeometry()
 		self.groups = 	{
 						'Group 1': {
 									'direction':'None',
-									'points': QtGui.QStandardItemModel(0, 3)					
+									'points': QtGui.QStandardItemModel(0, 3)
 									}
 						}
 		self.groups['Group 1']['points'].itemChanged.connect(self.changeCoords)
@@ -87,7 +87,7 @@ class CS4243Project(QtGui.QWidget):
 
 	def initUI(self):
 		# Create Display Image
-		self.initImage()		
+		self.initImage()
 
    		# Create Add Group Button
 		self.initSideBar()
@@ -115,7 +115,7 @@ class CS4243Project(QtGui.QWidget):
    		self.imageSize = imagePixmap.size()
    		self.sideBarSize = QtCore.QSize(self.screenSize.width() - self.imageSize.width(), self.screenSize.height())
    		self.image = labelImage
-   		return 
+   		return
 
 	def initSideBar(self):
 		vbox = QtGui.QVBoxLayout()
@@ -134,20 +134,20 @@ class CS4243Project(QtGui.QWidget):
 		hbox.addWidget(groupComboBox)
 		hbox.addWidget(addButton)
 		vbox.addLayout(hbox)
-		
-		
+
+
 		# Group Info
 		groupInfo = QtGui.QVBoxLayout()
 		groupInfo.setSpacing(10.0)
 		groupInfo.setAlignment(QtCore.Qt.AlignTop)
 		vbox.addLayout(groupInfo)
-		
+
 		#Assign variables
 		self.sideBar = vbox
 		self.groupComboBox = groupComboBox
-		self.groupComboBox.currentIndexChanged['int'].connect(self.updateGroup)               
+		self.groupComboBox.currentIndexChanged['int'].connect(self.updateGroup)
 		self.updateGroup(0)
-		return 
+		return
 
 	# Main function to intialize the processing logic
 	def generateButtonClicked(self):
@@ -167,12 +167,12 @@ class CS4243Project(QtGui.QWidget):
 
 		pointsInterpolator = PointsInterpolator()
 		interpolatedData = pointsInterpolator.interpolate(groupsData)
-		
+
 		perspectiveProjector = PerspectiveProjector()
 		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH / 2.0, self.IMAGE_ORIGINAL_HEIGHT / 2.0, -5]
 		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 		results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), cameraPosition, orientation )
-		
+
 		imageFrame = np.zeros((int(self.IMAGE_ORIGINAL_HEIGHT),int(self.IMAGE_ORIGINAL_WIDTH),3), np.uint8)
 		for point, color in results.iteritems():
 			x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
@@ -222,11 +222,11 @@ class CS4243Project(QtGui.QWidget):
 		processButton = QtGui.QPushButton("Generate Video")
 		processButton.clicked.connect(self.generateButtonClicked)
 		groupInfo.addWidget(processButton)
-		
+
 		saveButton = QtGui.QPushButton("Save group")
 		saveButton.clicked.connect(self.save)
 		groupInfo.addWidget(saveButton)
-		
+
 
 		loadButton = QtGui.QPushButton("Load group")
 		loadButton.clicked.connect(self.load)
@@ -241,10 +241,10 @@ class CS4243Project(QtGui.QWidget):
 			self.loadForAllGroups()
 		else:
 			currentGroup = self.groups[selection]
-			self.loadGroup(currentGroup) 
+			self.loadGroup(currentGroup)
 
 	def loadForAllGroups(self):
-		self.groupComboBox.currentIndexChanged['int'].disconnect(self.updateGroup)   
+		self.groupComboBox.currentIndexChanged['int'].disconnect(self.updateGroup)
 		dataGenerator = DataGenerator()
 		allData = dataGenerator.loadDataFromFile('allData.json')
 		numGroups = len(allData.keys())
@@ -266,8 +266,8 @@ class CS4243Project(QtGui.QWidget):
 				yCoord = data['points'][i][1]
 				yCoord = int(yCoord * self.imageSize.height() / self.IMAGE_ORIGINAL_HEIGHT)
 				zCoord = data['points'][i][2]
-				groupData['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(xCoord))), 
-										QtGui.QStandardItem(QtCore.QString(str(yCoord))), 
+				groupData['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(xCoord))),
+										QtGui.QStandardItem(QtCore.QString(str(yCoord))),
 										QtGui.QStandardItem(QtCore.QString(str(zCoord)))])
 			groupData['points'].itemChanged.connect(self.changeCoords)
 		self.groupComboBox.currentIndexChanged['int'].connect(self.updateGroup)
@@ -275,7 +275,7 @@ class CS4243Project(QtGui.QWidget):
 
 	def loadGroup(self, currentGroup):
 		dataGenerator = DataGenerator()
-		data = dataGenerator.loadDataFromFile('groupData.json')	
+		data = dataGenerator.loadDataFromFile('groupData.json')
 		self.groups[str(self.groupComboBox.currentText())]['direction'] = data['direction']
 		self.groups[str(self.groupComboBox.currentText())]['points'].clear()
 		for i in range(len(data['points'])):
@@ -285,8 +285,8 @@ class CS4243Project(QtGui.QWidget):
 			yCoord = data['points'][i][1]
 			yCoord = int(yCoord * self.imageSize.height() / self.IMAGE_ORIGINAL_HEIGHT)
 			zCoord = data['points'][i][2]
-			self.groups[str(self.groupComboBox.currentText())]['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(xCoord))), 
-									QtGui.QStandardItem(QtCore.QString(str(yCoord))), 
+			self.groups[str(self.groupComboBox.currentText())]['points'].appendRow([QtGui.QStandardItem(QtCore.QString(str(xCoord))),
+									QtGui.QStandardItem(QtCore.QString(str(yCoord))),
 									QtGui.QStandardItem(QtCore.QString(str(zCoord)))])
 		self.drawPoints()
 
@@ -296,7 +296,7 @@ class CS4243Project(QtGui.QWidget):
 			self.saveForAllGroups()
 		else:
 			currentGroup = self.groups[selection]
-			self.saveGroup(currentGroup) 
+			self.saveGroup(currentGroup)
 
 	def saveGroup(self, currentGroup):
 		savedPoints = []
@@ -307,7 +307,7 @@ class CS4243Project(QtGui.QWidget):
 			savedPoints.append((xCoord, yCoord, zCoord))
 
 		group = {'direction' : currentGroup['direction'], 'points' : savedPoints}
-			
+
 		dataGenerator = DataGenerator()
 		dataGenerator.saveDataToFile('groupData.json',group)
 
@@ -329,7 +329,7 @@ class CS4243Project(QtGui.QWidget):
 		dataGenerator = DataGenerator()
 		dataGenerator.saveDataToFile('allData.json', groupsData)
 
-		
+
 	def updateDirection(self, changedIndex):
 		currentGroup = self.groups[str(self.groupComboBox.currentText())]
 		currentGroup['direction'] = self.DIRECTIONS[changedIndex]
@@ -355,12 +355,12 @@ class CS4243Project(QtGui.QWidget):
 	def changeCoords(self, item):
 		self.drawPoints()
 		return
-		
+
 
 def main():
 	app = QtGui.QApplication(sys.argv)
 	view = CS4243Project()
-	
+
 
 	sys.exit(app.exec_())
 

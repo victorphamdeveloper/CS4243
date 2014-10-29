@@ -7,7 +7,7 @@ class PerspectiveProjector:
 	# Constant declaration
 	IMG_NAME = "project.jpg"
 	FOCAL_LENGTH = 800
-	X_PIXEL_SCALING = Y_PIXEL_SCALING = 1 
+	X_PIXEL_SCALING = Y_PIXEL_SCALING = 1
 	X_CENTER_OFFSET = Y_CENTER_OFFSET= 0
 	Y_ROTATIONAL_AXIS = np.array([0, 1, 0])
 
@@ -15,7 +15,7 @@ class PerspectiveProjector:
 		return
 
 	"""
-	Perform perspective with given camera position and its rotation 
+	Perform perspective with given camera position and its rotation
 	on a set of points with given colours
 	* Input Format:
 	{
@@ -36,7 +36,7 @@ class PerspectiveProjector:
 		zBuffer = {}
 		print "Start Performing Perspective Projection..."
 		for key, color in pointDict.iteritems():
-			point = np.asarray(key) 
+			point = np.asarray(key)
 			den = np.dot(point - cameraPosition, np.asarray(orientation)[2])
 			if (den != 0):
 				projectedX = self.FOCAL_LENGTH * np.dot(point - cameraPosition, np.asarray(orientation)[0]) * self.X_PIXEL_SCALING / den + self.X_CENTER_OFFSET
@@ -77,10 +77,10 @@ class PerspectiveProjector:
 	# Retrieve corresponding quaternion from angle and rotational axis
 	def _getQuaternion(self, rotationalAxis, angle):
 		cosAngle = np.cos(angle / 2.0)
-		sinAngle = np.sin(angle / 2.0) 
+		sinAngle = np.sin(angle / 2.0)
 		return np.array([cosAngle, 0, sinAngle, 0])
 
-	# Function to translate the camera 
+	# Function to translate the camera
 	def _translateCameraWithAngle(self, cameraPos, rotationalAxis, angle):
 		q = self._getQuaternion(rotationalAxis, angle)
 		negate_q = np.array([q[0], -q[1], -q[2], -q[3]])
@@ -107,4 +107,4 @@ class PerspectiveProjector:
 		out[2][1] = 2 * (q2 * q3 + q0 * q1)
 		out[2][2] = np.power(q0, 2) + np.power(q3, 2) - np.power(q1, 2) - np.power(q2, 2)
 
-		return np.matrix(out)	
+		return np.matrix(out)

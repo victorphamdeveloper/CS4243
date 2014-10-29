@@ -3,7 +3,7 @@ from perspectiveProjector import *
 from dataGenerator import *
 
 import copy
-import cv2 
+import cv2
 import cv2.cv as cv
 
 IMAGE_ORIGINAL_WIDTH = 1632.0
