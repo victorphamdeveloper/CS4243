@@ -34,7 +34,7 @@ for point, color in results.iteritems():
 	x = int(point[0] + IMAGE_ORIGINAL_WIDTH  / 2.0)
 	y = int(point[1] + IMAGE_ORIGINAL_HEIGHT / 2.0)
 	if(0 <= x and x < IMAGE_ORIGINAL_WIDTH and 0 <= y and y < IMAGE_ORIGINAL_HEIGHT):
-		imageFrame[y][x] = [color[2], color[1], color[0]]
+		imageFrame[y][x] = [color[0], color[1], color[2]]
 
 winname = "imageWin"
 win = cv.NamedWindow(winname, cv.CV_WINDOW_AUTOSIZE)

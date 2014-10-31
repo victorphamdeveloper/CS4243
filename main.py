@@ -9,6 +9,7 @@ from PyQt4 import QtGui, QtCore
 import cv2
 import cv2.cv as cv
 import numpy as np
+import time
 
 class CS4243Project(QtGui.QWidget):
 	# Constant Declaration
@@ -20,8 +21,6 @@ class CS4243Project(QtGui.QWidget):
 		super(CS4243Project, self).mousePressEvent(event)
 		xCoord = event.x()
 		yCoord = event.y()
-		print xCoord*self.IMAGE_ORIGINAL_WIDTH/self.imageSize.width()
-		print yCoord*self.IMAGE_ORIGINAL_HEIGHT/self.imageSize.height()
 		if(xCoord > self.imageSize.width()):
 			return
 		currentGroup = self.groups[str(self.groupComboBox.currentText())]
@@ -153,6 +152,7 @@ class CS4243Project(QtGui.QWidget):
 
 	# Main function to intialize the processing logic
 	def generateButtonClicked(self):
+		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
 		for key in self.groups.keys():
 			groupsData[key] = {}
@@ -167,14 +167,17 @@ class CS4243Project(QtGui.QWidget):
 				zCoord = int(str(groupPoints.item(i, 2).text()))
 				data['points'].append((xCoord, yCoord, zCoord))
 
+		start = current_milli_time()
 		pointsInterpolator = PointsInterpolator()
 		interpolatedData = pointsInterpolator.interpolate(groupsData)
+		print 'Time taken for interpolation: ', (current_milli_time() - start), 'ms'
 
+		start = current_milli_time()
 		perspectiveProjector = PerspectiveProjector()
-		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH / 2.0, self.IMAGE_ORIGINAL_HEIGHT / 2.0, -5]
+		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH / 2.0, self.IMAGE_ORIGINAL_HEIGHT * 2 / 3.0, -5]
 		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 		results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), cameraPosition, orientation )
-
+		print 'Time taken for perspective projection: ', (current_milli_time() - start), 'ms'
 		imageFrame = np.zeros((int(self.IMAGE_ORIGINAL_HEIGHT),int(self.IMAGE_ORIGINAL_WIDTH),3), np.uint8)
 		for point, color in results.iteritems():
 			x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
@@ -184,8 +187,9 @@ class CS4243Project(QtGui.QWidget):
 
 		winname = "imageWin"
 		win = cv.NamedWindow(winname, cv.CV_WINDOW_AUTOSIZE)
+		imageFrame = cv2.resize(imageFrame, (1200, 900))
 		cv2.imshow('imageWin', imageFrame)
-		cv2.waitKey(10000)
+		cv2.waitKey(0)
 		cv.DestroyWindow(winname)
 
 		return

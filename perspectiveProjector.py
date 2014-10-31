@@ -39,6 +39,7 @@ class PerspectiveProjector:
 		for groupKey, group in data.iteritems():
 			pointDict = group['colors']
 			tempColor = {}
+			tempCount = {}
 			tempDist = {}
 			projectedCorners = []
 			minValues = [sys.maxint, sys.maxint]
@@ -60,7 +61,15 @@ class PerspectiveProjector:
 					projectedY = self.FOCAL_LENGTH * np.dot(point - cameraPosition, np.asarray(orientation)[1]) * self.Y_PIXEL_SCALING / den + self.Y_CENTER_OFFSET
 					projectedPoint = (int(projectedX), int(projectedY))
 					distance = la.norm(cameraPosition - point)
-					tempColor[projectedPoint] = color
+					if(not projectedPoint in tempCount):
+						tempCount[projectedPoint] = 1
+						tempColor[projectedPoint] = color.astype(dtype='int64')
+					else:
+						tempCount[projectedPoint] += 1
+						accumulatedColor = tempColor[projectedPoint]
+						tempColor[projectedPoint] = (accumulatedColor[0] + color[0],
+													accumulatedColor[1] + color[1],
+													accumulatedColor[2] + color[2])
 					tempDist[projectedPoint] = distance
 
 			for projectedCorner in projectedCorners:
@@ -79,8 +88,14 @@ class PerspectiveProjector:
 								for n in xrange(-i, i + 1, 1):
 									if(np.abs(m) != i and np.abs(n) != i):
 										continue
-									if (x + m, y + n) in tempColor:
-										points.append((x + m, y + n))
+									point = (x + m, y + n)
+									if point in tempColor:
+										count = tempCount[point]
+										if(count > 1):
+											color = tempColor[point]
+											tempColor[point] = tuple([round(u / count) for u in color])
+											tempCount[point] = 1
+										points.append(point)
 							if(len(points) != 0):
 								counter = [0, 0, 0, 0, 0]
 								for point in points:
@@ -88,17 +103,20 @@ class PerspectiveProjector:
 									counter[1] += tempColor[point][1]
 									counter[2] += tempColor[point][2]
 									counter[3] += tempDist[point]
-									counter[4] += 1
-								tempColor[(x, y)] = tuple([u / counter[4] for u in [counter[0], counter[1], counter[2]]])
+									counter[4] += tempCount[point]
+								tempColor[(x, y)] = (counter[0], counter[1], counter[2])
+								tempCount[(x, y)] = counter[4]
 								tempDist[(x, y)] = counter[3] / counter[4]
 								break  
 			for point in tempColor:
+				color = tempColor[point]
+				count = tempCount[point]
 				if(not point in result):
-					result[point] = tempColor[point]
+					result[point] = tuple([round(x / count) for x in color])
 					zBuffer[point] = tempDist[point]
 				else:
 					if(tempDist[point] < zBuffer[point]):
-						result[point] = tempColor[point]
+						result[point] = tuple([round(x / count) for x in color])
 						zBuffer[point] = tempDist[point]
 
 		print "Finish Performing Perspective Projection :)"

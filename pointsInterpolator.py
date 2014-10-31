@@ -146,16 +146,15 @@ class PointsInterpolator:
 
 	# Fill the color for every point in each group from the data
 	def _fillColor(self, data):
-		image = cv2.imread("project.jpeg", cv2.CV_LOAD_IMAGE_COLOR)
+		image = cv2.imread("project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 		width = image.shape[1]
 		height = image.shape[0]
-
+		print width, height
 		for key, group in data.iteritems():
 			colorData = {}
 			pts = group['points']
 			for point in pts:
-				colorData[point] = image[round(point[0]),round(point[1])]
-				
+				colorData[point] = image[round(point[1])][round(point[0])]
 				'''
 				if(key == 'Group 1'):
 					colorData[point] = image[point[0],point[1]]#(255, 0, 0)
