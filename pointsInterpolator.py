@@ -26,9 +26,9 @@ class PointsInterpolator:
 		print "Start Performing Interpolation..."
 		self._adjustPoints(data)
 		self._interpolatePoints(data)
-		colouredData = self._fillColor(data)
+		self._fillColor(data)
 		print "Finish Performing Interpolation :)"
-		return colouredData
+		return data
 
 	# Adjust data so that each group points is on the same plane
 	def _adjustPoints(self, data):
@@ -71,6 +71,7 @@ class PointsInterpolator:
 	# Interpolation points inside the polygon create by the corners in each group
 	def _interpolateGroup(self, group):
 		pts = group['points']
+		group['corners'] = [tuple(u) for u in group['points']]
 		if(len(pts) < 3):
 			print "This set of points does not have enough points for interpolation"
 		corners = []
@@ -100,7 +101,7 @@ class PointsInterpolator:
 		planeFormula = group['planeFormula']
 		for m in self._drange(minValues[maxAxis], maxValues[maxAxis] + 1, 1.0):
 			for n in self._drange(minValues[secondMaxAxis], maxValues[secondMaxAxis] + 1, 1.0):
-				if(not self._pointInPolygon((n,m), corners)):
+				if(not PointsInterpolator.pointInPolygon(n, m, corners)):
 					continue
 				point = [0, 0, 0]
 				point[maxAxis] = m
@@ -115,25 +116,29 @@ class PointsInterpolator:
 			yield x
 			x += jump
 
-	def _pointInPolygon(self, point, corners):
-		polySides = len(corners)
-		i = 0
-		j = polySides - 1
-		oddNodes= False
-		while(i < polySides):
-			if((corners[i][1] < point[1] and corners[j][1] >= point[1]
-				or corners[j][1] < point[1] and corners[i][1] >= point[1])
-				and (corners[i][0] <= point[0] or corners[j][0] <= point[0])):
-				oddNodes = oddNodes ^ (corners[i][0] + (point[1] - corners[i][1]) / (corners[j][1] - corners[i][1]) * (corners[j][0] - corners[i][0]) < point[0])
-			j = i
-			i += 1
+	@staticmethod
+	def pointInPolygon(x, y, poly):
+	    polySides = len(poly)
+	    inside =False
 
-		return oddNodes
+	    p1x, p1y = poly[0]
+	    for i in range(polySides + 1):
+	        p2x, p2y = poly[i % polySides]
+	        if y > min(p1y, p2y):
+	            if y <= max(p1y, p2y):
+	                if x <= max(p1x, p2x):
+	                    if p1y != p2y:
+	                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+	                    if p1x == p2x or x <= xinters:
+	                        inside = not inside
+	        p1x, p1y = p2x, p2y
+
+	    return inside
 
 	# Fill the color for every point in each group from the data
 	def _fillColor(self, data):
-		colorData = {}
 		for key, group in data.iteritems():
+			colorData = {}
 			pts = group['points']
 			for point in pts:
 				if(key == 'Group 1'):
@@ -146,5 +151,6 @@ class PointsInterpolator:
 					colorData[point] = (255, 255, 255)
 				else:
 					colorData[point] = (189, 190, 0)
-
-		return colorData
+			group['colors'] = colorData
+			group['points'] = None
+		return

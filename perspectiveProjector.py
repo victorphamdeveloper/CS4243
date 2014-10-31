@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 from numpy import linalg as la
+from pointsInterpolator import *
 
 # This class is used for performing perspective projection
 class PerspectiveProjector:
@@ -26,30 +27,80 @@ class PerspectiveProjector:
 		2D array represent every pixel in the frame
 	"""
 
-	def performPerspectiveWithYRotatedAngle(self, pointDict, initialCameraPosition, angle):
+	def performPerspectiveWithYRotatedAngle(self, data, initialCameraPosition, angle):
 		cameraRotationalAxes = self._quat2rot(self._getQuaternion(self.Y_ROTATIONAL_AXIS, angle))
 		cameraPos = self._translateCameraWithAngle(initialCameraPosition, self.Y_ROTATIONAL_AXIS, -angle)
-		return self.performPerspective(pointDict, cameraPos, cameraRotationalAxes)
+		return self.performPerspective(data, cameraPos, cameraRotationalAxes)
 
-	def performPerspective(self, pointDict, cameraPosition, orientation):
+	def performPerspective(self, data, cameraPosition, orientation):
 		result  = {}
 		zBuffer = {}
 		print "Start Performing Perspective Projection..."
-		for key, color in pointDict.iteritems():
-			point = np.asarray(key)
-			den = np.dot(point - cameraPosition, np.asarray(orientation)[2])
-			if (den != 0):
-				projectedX = self.FOCAL_LENGTH * np.dot(point - cameraPosition, np.asarray(orientation)[0]) * self.X_PIXEL_SCALING / den + self.X_CENTER_OFFSET
-				projectedY = self.FOCAL_LENGTH * np.dot(point - cameraPosition, np.asarray(orientation)[1]) * self.Y_PIXEL_SCALING / den + self.Y_CENTER_OFFSET
-				projectedPoint = (int(projectedX), int(projectedY))
-				distance = la.norm(cameraPosition - point)
-				if not(projectedPoint in zBuffer):
-					result[projectedPoint] = color
-					zBuffer[projectedPoint] = distance
+		for groupKey, group in data.iteritems():
+			pointDict = group['colors']
+			tempColor = {}
+			tempDist = {}
+			projectedCorners = []
+			minValues = [sys.maxint, sys.maxint]
+			maxValues = [0, 0]
+			for corner in group['corners']:
+				corner = np.asarray(corner)
+				den = np.dot(corner - cameraPosition, np.asarray(orientation)[2])
+				if(den != 0):
+					projectedX = self.FOCAL_LENGTH * np.dot(corner - cameraPosition, np.asarray(orientation)[0]) * self.X_PIXEL_SCALING / den + self.X_CENTER_OFFSET
+					projectedY = self.FOCAL_LENGTH * np.dot(corner - cameraPosition, np.asarray(orientation)[1]) * self.Y_PIXEL_SCALING / den + self.Y_CENTER_OFFSET
+					projectedCorner = (int(projectedX), int(projectedY))
+					projectedCorners.append(projectedCorner)
+
+			for pointKey, color in pointDict.iteritems():
+				point = np.asarray(pointKey)
+				den = np.dot(point - cameraPosition, np.asarray(orientation)[2])
+				if (den != 0):
+					projectedX = self.FOCAL_LENGTH * np.dot(point - cameraPosition, np.asarray(orientation)[0]) * self.X_PIXEL_SCALING / den + self.X_CENTER_OFFSET
+					projectedY = self.FOCAL_LENGTH * np.dot(point - cameraPosition, np.asarray(orientation)[1]) * self.Y_PIXEL_SCALING / den + self.Y_CENTER_OFFSET
+					projectedPoint = (int(projectedX), int(projectedY))
+					distance = la.norm(cameraPosition - point)
+					tempColor[projectedPoint] = color
+					tempDist[projectedPoint] = distance
+
+			for projectedCorner in projectedCorners:
+				for i in range(2):
+					if(projectedCorner[i] < minValues[i]):
+						minValues[i] = projectedCorner[i]
+					if(projectedCorner[i] > maxValues[i]):
+						maxValues[i] = projectedCorner[i]
+
+			for x in xrange(minValues[0], maxValues[0] + 1, 1):
+				for y in xrange(minValues[1], maxValues[1] + 1, 1):
+					if((not (x, y) in tempColor) and PointsInterpolator.pointInPolygon(x, y, projectedCorners)):
+						for i in xrange(1, 11):
+							points = []
+							for m in xrange(-i, i + 1, 1):
+								for n in xrange(-i, i + 1, 1):
+									if(np.abs(m) != i and np.abs(n) != i):
+										continue
+									if (x + m, y + n) in tempColor:
+										points.append((x + m, y + n))
+							if(len(points) != 0):
+								counter = [0, 0, 0, 0, 0]
+								for point in points:
+									counter[0] += tempColor[point][0]
+									counter[1] += tempColor[point][1]
+									counter[2] += tempColor[point][2]
+									counter[3] += tempDist[point]
+									counter[4] += 1
+								tempColor[(x, y)] = tuple([u / counter[4] for u in [counter[0], counter[1], counter[2]]])
+								tempDist[(x, y)] = counter[3] / counter[4]
+								break  
+			for point in tempColor:
+				if(not point in result):
+					result[point] = tempColor[point]
+					zBuffer[point] = tempDist[point]
 				else:
-					if(distance < zBuffer[projectedPoint]):
-						zBuffer[projectedPoint] = distance
-						result[projectedPoint] = color
+					if(tempDist[point] < zBuffer[point]):
+						result[point] = tempColor[point]
+						zBuffer[point] = tempDist[point]
+
 		print "Finish Performing Perspective Projection :)"
 		return result
 

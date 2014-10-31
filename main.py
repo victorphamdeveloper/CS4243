@@ -360,8 +360,6 @@ class CS4243Project(QtGui.QWidget):
 def main():
 	app = QtGui.QApplication(sys.argv)
 	view = CS4243Project()
-
-
 	sys.exit(app.exec_())
 
 if __name__ == '__main__':
