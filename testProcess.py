@@ -29,7 +29,6 @@ orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 #results = perspectiveProjector.performPerspectiveWithYRotatedAngle(copy.deepcopy(interpolatedData), cameraPosition, np.pi / 3.0)
 results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), cameraPosition, orientation )
 print 'Time taken for perspective projection: ', (current_milli_time() - start), 'ms'
-
 imageFrame = np.zeros((int(IMAGE_ORIGINAL_HEIGHT),int(IMAGE_ORIGINAL_WIDTH),3), np.uint8)
 for point, color in results.iteritems():
 	x = int(point[0] + IMAGE_ORIGINAL_WIDTH  / 2.0)

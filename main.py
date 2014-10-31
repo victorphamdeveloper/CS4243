@@ -20,6 +20,8 @@ class CS4243Project(QtGui.QWidget):
 		super(CS4243Project, self).mousePressEvent(event)
 		xCoord = event.x()
 		yCoord = event.y()
+		print xCoord*self.IMAGE_ORIGINAL_WIDTH/self.imageSize.width()
+		print yCoord*self.IMAGE_ORIGINAL_HEIGHT/self.imageSize.height()
 		if(xCoord > self.imageSize.width()):
 			return
 		currentGroup = self.groups[str(self.groupComboBox.currentText())]
