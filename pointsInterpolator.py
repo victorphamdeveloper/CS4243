@@ -20,8 +20,15 @@ class PointsInterpolator:
 	}
 	* Output format:
 	{
-		(x1, y1, z1): (r1, g1, b1),
-		(x2, y2, z2): (r2, g2, b2)
+		'Group i': {
+			'direction': 'North',
+			'colors':{
+				(x1, y1, z1): (r1, g1, b1)			
+			}
+			'corners':{
+				[(x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
+			}
+		}
 	}
 	"""
 	def interpolate(self, data):
