@@ -1,6 +1,7 @@
 import sys
 import numpy as np
-import cv2 as cv
+import cv2
+import cv2.cv as cv
 
 # This class is used for interpolating points
 class PointsInterpolator:
@@ -14,12 +15,20 @@ class PointsInterpolator:
 		'Group i': {
 			'direction': 'North',
 			'points': [(x1, y1, z1), (x2, y2, z2)]
+
 		}
 	}
 	* Output format:
 	{
-		(x1, y1, z1): (r1, g1, b1),
-		(x2, y2, z2): (r2, g2, b2)
+		'Group i': {
+			'direction': 'North',
+			'colors':{
+				(x1, y1, z1): (r1, g1, b1)			
+			}
+			'corners':{
+				[(x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
+			}
+		}
 	}
 	"""
 	def interpolate(self, data):
@@ -137,12 +146,18 @@ class PointsInterpolator:
 
 	# Fill the color for every point in each group from the data
 	def _fillColor(self, data):
+		image = cv2.imread("project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+		width = image.shape[1]
+		height = image.shape[0]
+		print width, height
 		for key, group in data.iteritems():
 			colorData = {}
 			pts = group['points']
 			for point in pts:
+				colorData[point] = image[round(point[1])][round(point[0])]
+				'''
 				if(key == 'Group 1'):
-					colorData[point] = (255, 0, 0)
+					colorData[point] = image[point[0],point[1]]#(255, 0, 0)
 				elif(key == 'Group 2'):
 					colorData[point] = (0, 255, 0)
 				elif(key == 'Group 3'):
@@ -150,7 +165,7 @@ class PointsInterpolator:
 				elif(key == 'Group 4'):
 					colorData[point] = (255, 255, 255)
 				else:
-					colorData[point] = (189, 190, 0)
+					colorData[point] = (189, 190, 0)'''
 			group['colors'] = colorData
 			group['points'] = None
 		return
