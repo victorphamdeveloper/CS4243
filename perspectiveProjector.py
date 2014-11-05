@@ -1,6 +1,12 @@
 import sys
+
+# External Dependence
 import numpy as np
 from numpy import linalg as la
+import cv2
+import cv2.cv as cv
+
+# Class Dependence
 from pointsInterpolator import *
 
 # This class is used for performing perspective projection
@@ -23,38 +29,40 @@ class PerspectiveProjector:
 		image = cv2.resize(image, (self.IMAGE_ORIGINAL_WIDTH, self.IMAGE_ORIGINAL_HEIGHT))
 		width = image.shape[1]
 		height = image.shape[0]
-		print "Image Width: ", width, "Image Height: ", height
-		zBuffer = {}
 		for groupKey, group in data.iteritems():
-			groupPoints = group['points']
+			# Projection
+			projectedCorners = []
+			groupPoints = group['corners'] + group['points'] 
 			groupMap = {}
-			for point in groupPoints:
+			for i in range(len(groupPoints)):
+				point = groupPoints[i]
 				pointArr = np.asarray(point)
 				den = np.dot(pointArr - initialCameraPosition, np.asarray(orientation)[2])
 				if (den != 0):
-					projectedX = self.FOCAL_LENGTH * np.dot(pointArr - initialCameraPosition, np.asarray(orientation)[0]) * self.X_PIXEL_SCALING / den + self.X_CENTER_OFFSET
-					projectedY = self.FOCAL_LENGTH * np.dot(pointArr - initialCameraPosition, np.asarray(orientation)[1]) * self.Y_PIXEL_SCALING / den + self.Y_CENTER_OFFSET
+					projectedX = self.FOCAL_LENGTH * np.dot(pointArr - initialCameraPosition, np.asarray(orientation)[0]) * self.X_PIXEL_SCALING / den + self.X_CENTER_OFFSET + self.IMAGE_ORIGINAL_WIDTH / 2.0
+					projectedY = self.FOCAL_LENGTH * np.dot(pointArr - initialCameraPosition, np.asarray(orientation)[1]) * self.Y_PIXEL_SCALING / den + self.Y_CENTER_OFFSET + self.IMAGE_ORIGINAL_HEIGHT / 2.0
 					projectedPoint = (int(projectedX), int(projectedY))
+					if(i < len(group['corners'])):
+						projectedCorners.append(projectedPoint)
 					distance = la.norm(initialCameraPosition - pointArr)
 					if(not projectedPoint in groupMap):
 						groupMap[projectedPoint] = [point]
 					else:
 						groupMap[projectedPoint].append(point)
-					if(not projectedPoint in zBuffer):
-						zBuffer[projectedPoint] = (groupKey, distance)
-					else:
-						if(distance < zBuffer[projectedPoint][1]):
-							zBuffer[projectedPoint] = (groupKey, distance)
 			group['map'] = groupMap
-			group['colors'] = {}
-
-		for pixel, groupInfo in zBuffer.iteritems():
-			group = data[groupInfo[0]]
-			groupMap = group['map']
-			groupColors = group['colors']
-			points = groupMap[pixel]
-			for point in points:
-				groupColors[point] = image[round(pixel[1] + self.IMAGE_ORIGINAL_HEIGHT / 2.0)][round(pixel[0] + self.IMAGE_ORIGINAL_WIDTH / 2.0)]
+			groupColors = {}
+			# Matching colors
+			src = np.float32(projectedCorners).reshape(-1, 1, 2)
+			dst = np.float32(group['2Dpoints']).reshape(-1, 1, 2)
+			transformationMatrix, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
+			finalSrc = groupMap.keys()
+			finalDst = np.int32(cv2.perspectiveTransform(np.float32(finalSrc).reshape(-1, 1, 2), transformationMatrix))
+			for i in range(len(finalDst)):
+				dstCoord = finalDst[i].ravel()
+				srcCoord = finalSrc[i]
+				for point in groupMap[srcCoord]:
+					groupColors[point] = image[round(dstCoord[1])][round(dstCoord[0])]
+			group['colors'] = groupColors
 
 		for key, group in data.iteritems():
 			group['points'] = None

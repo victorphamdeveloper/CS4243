@@ -1,15 +1,19 @@
 import sys
 import copy
 import json
+import time
+
+# Class Dependence
 from pointsInterpolator import *
 from perspectiveProjector import *
 from dataGenerator import *
-from PyQt4 import QtGui, QtCore
 
+# External Dependence
+from PyQt4 import QtGui, QtCore
 import cv2
 import cv2.cv as cv
 import numpy as np
-import time
+
 
 class CS4243Project(QtGui.QWidget):
 	# Constant Declaration
@@ -186,8 +190,8 @@ class CS4243Project(QtGui.QWidget):
 		perspectiveProjector = PerspectiveProjector()
 		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH / 2.0, self.IMAGE_ORIGINAL_HEIGHT / 2.0, 0]
 		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-		#perspectiveProjector.testAlignmentByUsingDefaultColor(interpolatedData)
-		perspectiveProjector.fillColor(interpolatedData, cameraPosition, orientation)
+		perspectiveProjector.testAlignmentByUsingDefaultColor(interpolatedData)
+		#perspectiveProjector.fillColor(interpolatedData, cameraPosition, orientation)
 
 		# Test Perspective Performance
 		results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), cameraPosition, orientation )
@@ -207,7 +211,6 @@ class CS4243Project(QtGui.QWidget):
 		cv2.imshow('imageWin', imageFrame)
 		cv2.waitKey(0)
 		cv.DestroyWindow(winname)
-
 		return
 
 	def updateGroup(self, changedIndex):

@@ -1,4 +1,6 @@
 import sys
+
+# External Dependence
 import numpy as np
 import cv2
 import cv2.cv as cv
@@ -130,7 +132,7 @@ class PointsInterpolator:
 	@staticmethod
 	def pointInPolygon(x, y, poly):
 	    polySides = len(poly)
-	    inside =False
+	    inside = False
 
 	    p1x, p1y = poly[0]
 	    for i in range(polySides + 1):
