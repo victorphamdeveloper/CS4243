@@ -1,4 +1,6 @@
 import sys
+
+# External Dependence
 import numpy as np
 import cv2
 import cv2.cv as cv
@@ -22,11 +24,14 @@ class PointsInterpolator:
 	{
 		'Group i': {
 			'direction': 'North',
-			'colors':{
-				(x1, y1, z1): (r1, g1, b1)			
-			}
+			'points':{
+				[(x1, y1, z1), ...]			`
+			}	
 			'corners':{
 				[(x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
+			},
+			'2Dpoints':{
+				[(x1, y1), (x2, y2), (x3, y3)]
 			}
 		}
 	}
@@ -35,7 +40,6 @@ class PointsInterpolator:
 		print "Start Performing Interpolation..."
 		self._adjustPoints(data)
 		self._interpolatePoints(data)
-		self._fillColor(data)
 		print "Finish Performing Interpolation :)"
 		return data
 
@@ -108,8 +112,10 @@ class PointsInterpolator:
 
 		interpolatedPoints = []
 		planeFormula = group['planeFormula']
-		for m in self._drange(minValues[maxAxis], maxValues[maxAxis] + 1, 1.0):
-			for n in self._drange(minValues[secondMaxAxis], maxValues[secondMaxAxis] + 1, 1.0):
+		stepMaxAxis = (maxValues[maxAxis] - minValues[maxAxis]) / 100.0
+		stepSecondMaxAxis = (maxValues[secondMaxAxis] - minValues[secondMaxAxis]) / 100.0
+		for m in self._drange(minValues[maxAxis], maxValues[maxAxis] + 1, stepMaxAxis):
+			for n in self._drange(minValues[secondMaxAxis], maxValues[secondMaxAxis] + 1, stepSecondMaxAxis):
 				if(not PointsInterpolator.pointInPolygon(n, m, corners)):
 					continue
 				point = [0, 0, 0]
@@ -128,7 +134,7 @@ class PointsInterpolator:
 	@staticmethod
 	def pointInPolygon(x, y, poly):
 	    polySides = len(poly)
-	    inside =False
+	    inside = False
 
 	    p1x, p1y = poly[0]
 	    for i in range(polySides + 1):
@@ -143,29 +149,3 @@ class PointsInterpolator:
 	        p1x, p1y = p2x, p2y
 
 	    return inside
-
-	# Fill the color for every point in each group from the data
-	def _fillColor(self, data):
-		image = cv2.imread("project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-		width = image.shape[1]
-		height = image.shape[0]
-		print width, height
-		for key, group in data.iteritems():
-			colorData = {}
-			pts = group['points']
-			for point in pts:
-				colorData[point] = image[round(point[1])][round(point[0])]
-				'''
-				if(key == 'Group 1'):
-					colorData[point] = image[point[0],point[1]]#(255, 0, 0)
-				elif(key == 'Group 2'):
-					colorData[point] = (0, 255, 0)
-				elif(key == 'Group 3'):
-					colorData[point] = (0, 0, 255)
-				elif(key == 'Group 4'):
-					colorData[point] = (255, 255, 255)
-				else:
-					colorData[point] = (189, 190, 0)'''
-			group['colors'] = colorData
-			group['points'] = None
-		return

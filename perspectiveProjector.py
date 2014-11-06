@@ -1,18 +1,86 @@
 import sys
+import random
+
+# External Dependence
 import numpy as np
 from numpy import linalg as la
+import cv2
+import cv2.cv as cv
+
+# Class Dependence
 from pointsInterpolator import *
 
 # This class is used for performing perspective projection
 class PerspectiveProjector:
 	# Constant declaration
 	IMG_NAME = "project.jpg"
-	FOCAL_LENGTH = 800
 	X_PIXEL_SCALING = Y_PIXEL_SCALING = 1
 	X_CENTER_OFFSET = Y_CENTER_OFFSET= 0
 	Y_ROTATIONAL_AXIS = np.array([0, 1, 0])
+	IMAGE_ORIGINAL_WIDTH = 800
+	IMAGE_ORIGINAL_HEIGHT = 600
 
 	def __init__(self):
+		self.FOCAL_LENGTH = 800.0 # default focal length
+		return
+
+	# Fill the color for every point in each group from the data
+	def fillColor(self, data, initialCameraPosition, orientation):
+		image = cv2.imread("project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+		image = cv2.resize(image, (self.IMAGE_ORIGINAL_WIDTH, self.IMAGE_ORIGINAL_HEIGHT))
+		width = image.shape[1]
+		height = image.shape[0]
+		for groupKey, group in data.iteritems():
+			# Projection
+			projectedCorners = []
+			groupPoints = group['corners'] + group['points'] 
+			groupMap = {}
+			for i in range(len(groupPoints)):
+				point = groupPoints[i]
+				pointArr = np.asarray(point)
+				den = np.dot(pointArr - initialCameraPosition, np.asarray(orientation)[2])
+				if (den != 0):
+					projectedX = self.FOCAL_LENGTH * np.dot(pointArr - initialCameraPosition, np.asarray(orientation)[0]) * self.X_PIXEL_SCALING / den + self.X_CENTER_OFFSET + self.IMAGE_ORIGINAL_WIDTH / 2.0
+					projectedY = self.FOCAL_LENGTH * np.dot(pointArr - initialCameraPosition, np.asarray(orientation)[1]) * self.Y_PIXEL_SCALING / den + self.Y_CENTER_OFFSET + self.IMAGE_ORIGINAL_HEIGHT / 2.0
+					projectedPoint = (int(projectedX), int(projectedY))
+					if(i < len(group['corners'])):
+						projectedCorners.append(projectedPoint)
+					distance = la.norm(initialCameraPosition - pointArr)
+					if(not projectedPoint in groupMap):
+						groupMap[projectedPoint] = [point]
+					else:
+						groupMap[projectedPoint].append(point)
+			group['map'] = groupMap
+			groupColors = {}
+			# Matching colors
+			src = np.float32(projectedCorners).reshape(-1, 1, 2)
+			dst = np.float32(group['2Dpoints']).reshape(-1, 1, 2)
+			transformationMatrix, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
+			finalSrc = groupMap.keys()
+			finalDst = np.int32(cv2.perspectiveTransform(np.float32(finalSrc).reshape(-1, 1, 2), transformationMatrix))
+			for i in range(len(finalDst)):
+				dstCoord = finalDst[i].ravel()
+				srcCoord = finalSrc[i]
+				for point in groupMap[srcCoord]:
+					groupColors[point] = image[round(dstCoord[1])][round(dstCoord[0])]
+			group['colors'] = groupColors
+
+		for key, group in data.iteritems():
+			group['points'] = None
+			group['map'] = None
+		return
+
+	def testAlignmentByUsingDefaultColor(self, data):
+		for key, group in data.iteritems():
+			colorData = {}
+			pts = group['points']
+			randomRed = random.randint(0, 255)
+			randomGreen = random.randint(0, 255)
+			randomBlue = random.randint(0, 255)
+			for point in pts:
+				colorData[point] = np.array([randomRed, randomGreen, randomBlue])
+			group['colors'] = colorData
+			group['points'] = None
 		return
 
 	"""
@@ -20,18 +88,22 @@ class PerspectiveProjector:
 	on a set of points with given colours
 	* Input Format:
 	{
-		(x1, y1, z1): (r1, g1, b1),
-		(x2, y2, z2): (r2, g2, b2)
+		'Group i': {
+			'direction': 'North',
+			'points':{
+				[(x1, y1, z1), ...]			`
+			}	
+			'corners':{
+				[(x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
+			},
+			'2Dpoints':{
+				[(x1, y1), (x2, y2), (x3, y3)]
+			}
+		}
 	}
 	* Output Format:
 		2D array represent every pixel in the frame
 	"""
-
-	def performPerspectiveWithYRotatedAngle(self, data, initialCameraPosition, angle):
-		cameraRotationalAxes = self._quat2rot(self._getQuaternion(self.Y_ROTATIONAL_AXIS, angle))
-		cameraPos = self._translateCameraWithAngle(initialCameraPosition, self.Y_ROTATIONAL_AXIS, -angle)
-		return self.performPerspective(data, cameraPos, cameraRotationalAxes)
-
 	def performPerspective(self, data, cameraPosition, orientation):
 		result  = {}
 		zBuffer = {}
@@ -52,7 +124,8 @@ class PerspectiveProjector:
 					projectedY = self.FOCAL_LENGTH * np.dot(corner - cameraPosition, np.asarray(orientation)[1]) * self.Y_PIXEL_SCALING / den + self.Y_CENTER_OFFSET
 					projectedCorner = (int(projectedX), int(projectedY))
 					projectedCorners.append(projectedCorner)
-
+			group['corners'] = projectedCorners
+			
 			for pointKey, color in pointDict.iteritems():
 				point = np.asarray(pointKey)
 				den = np.dot(point - cameraPosition, np.asarray(orientation)[2])
@@ -78,7 +151,7 @@ class PerspectiveProjector:
 						minValues[i] = projectedCorner[i]
 					if(projectedCorner[i] > maxValues[i]):
 						maxValues[i] = projectedCorner[i]
-
+			'''
 			for x in xrange(minValues[0], maxValues[0] + 1, 1):
 				for y in xrange(minValues[1], maxValues[1] + 1, 1):
 					if((not (x, y) in tempColor) and PointsInterpolator.pointInPolygon(x, y, projectedCorners)):
@@ -107,7 +180,8 @@ class PerspectiveProjector:
 								tempColor[(x, y)] = (counter[0], counter[1], counter[2])
 								tempCount[(x, y)] = counter[4]
 								tempDist[(x, y)] = counter[3] / counter[4]
-								break  
+								break 
+			''' 
 			for point in tempColor:
 				color = tempColor[point]
 				count = tempCount[point]
@@ -121,6 +195,11 @@ class PerspectiveProjector:
 
 		print "Finish Performing Perspective Projection :)"
 		return result
+
+	def performPerspectiveWithYRotatedAngle(self, data, initialCameraPosition, angle):
+		cameraRotationalAxes = self._quat2rot(self._getQuaternion(self.Y_ROTATIONAL_AXIS, angle))
+		cameraPos = self._translateCameraWithAngle(initialCameraPosition, self.Y_ROTATIONAL_AXIS, -angle)
+		return self.performPerspective(data, cameraPos, cameraRotationalAxes)
 
 	##################### SUPPORT FUNCTIONS ##############################
 	# Function for multiplying quaternion
