@@ -1,4 +1,5 @@
 import sys
+import random
 
 # External Dependence
 import numpy as np
@@ -73,8 +74,11 @@ class PerspectiveProjector:
 		for key, group in data.iteritems():
 			colorData = {}
 			pts = group['points']
+			randomRed = random.randint(0, 255)
+			randomGreen = random.randint(0, 255)
+			randomBlue = random.randint(0, 255)
 			for point in pts:
-				colorData[point] = np.array([0, 255, 0])
+				colorData[point] = np.array([randomRed, randomGreen, randomBlue])
 			group['colors'] = colorData
 			group['points'] = None
 		return
@@ -147,7 +151,7 @@ class PerspectiveProjector:
 						minValues[i] = projectedCorner[i]
 					if(projectedCorner[i] > maxValues[i]):
 						maxValues[i] = projectedCorner[i]
-
+			'''
 			for x in xrange(minValues[0], maxValues[0] + 1, 1):
 				for y in xrange(minValues[1], maxValues[1] + 1, 1):
 					if((not (x, y) in tempColor) and PointsInterpolator.pointInPolygon(x, y, projectedCorners)):
@@ -176,7 +180,8 @@ class PerspectiveProjector:
 								tempColor[(x, y)] = (counter[0], counter[1], counter[2])
 								tempCount[(x, y)] = counter[4]
 								tempDist[(x, y)] = counter[3] / counter[4]
-								break  
+								break 
+			''' 
 			for point in tempColor:
 				color = tempColor[point]
 				count = tempCount[point]
