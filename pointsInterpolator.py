@@ -54,6 +54,7 @@ class PointsInterpolator:
 		pts = group['points']
 		if(len(pts) < 3):
 			print "This set of points does not need adjustment"
+			return
 
 		a, b, c, d = self._getPlaneFormula(pts[0], pts[1], pts[2])
 		for i in xrange(3, len(pts)):
