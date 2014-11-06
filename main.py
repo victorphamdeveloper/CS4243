@@ -93,6 +93,7 @@ class CS4243Project(QtGui.QWidget):
 									'points': QtGui.QStandardItemModel(0, 5)
 									}
 						}
+		self.groups['Group 1']['points'].itemChanged.connect(self.changeCoords)
 		return
 
 	def initUI(self):
@@ -190,10 +191,10 @@ class CS4243Project(QtGui.QWidget):
 		# Perspective Projection
 		start = current_milli_time()
 		perspectiveProjector = PerspectiveProjector()
-		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH / 2.0, self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 0]
+		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 2 / 3.0, self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 0]
 		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-		perspectiveProjector.testAlignmentByUsingDefaultColor(interpolatedData)
-		#perspectiveProjector.fillColor(interpolatedData, cameraPosition, orientation)
+		#perspectiveProjector.testAlignmentByUsingDefaultColor(interpolatedData)
+		perspectiveProjector.fillColor(interpolatedData, cameraPosition, orientation)
 
 		# Test Perspective Performance
 		results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), cameraPosition, orientation )
@@ -297,7 +298,7 @@ class CS4243Project(QtGui.QWidget):
 										QtGui.QStandardItem(QtCore.QString(str(zCoord))),
 										QtGui.QStandardItem(QtCore.QString(str(uCoord))),
 										QtGui.QStandardItem(QtCore.QString(str(vCoord)))])
-
+				groupData['points'].itemChanged.connect(self.changeCoords)
 		self.groupComboBox.currentIndexChanged['int'].connect(self.updateGroup)
 		self.drawPoints()
 

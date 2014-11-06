@@ -60,6 +60,8 @@ class PerspectiveProjector:
 			finalDst = np.int32(cv2.perspectiveTransform(np.float32(finalSrc).reshape(-1, 1, 2), transformationMatrix))
 			for i in range(len(finalDst)):
 				dstCoord = finalDst[i].ravel()
+				if(dstCoord[0] < 0 or dstCoord[0] >= self.IMAGE_ORIGINAL_WIDTH or dstCoord[1] < 0 or dstCoord[1] >= self.IMAGE_ORIGINAL_HEIGHT):
+					continue
 				srcCoord = finalSrc[i]
 				for point in groupMap[srcCoord]:
 					groupColors[point] = image[round(dstCoord[1])][round(dstCoord[0])]
