@@ -3,8 +3,7 @@ from __future__ import division
 import cv2
 import cv2.cv as cv
 import numpy as np
-import numpy.linalg as la
-import scipy.interpolate as interpolate
+import math
 
 class cameraPathGenerator:
     def __init__(self):
@@ -12,14 +11,15 @@ class cameraPathGenerator:
     
     """
     Find camera positions and angles
-    * Output format:
-        [((x1, y1, z1), angle1), (x2, y2, z2), angle2),...]
+    * resultput format:
+        [((position1.x, position1.y, position1.z), (orientation1.x, orientation1.y, orientation1.z)),
+         ((position2.x, position2.y, position2.z), (orientation2.x, orientation2.y, orientation2.z)),...]
     """
     def generateCameraPath(self):
-        keyPoints = [ ((158, 1192, 10), -30), 
-                      ((1316, 1121, 8), 120), 
-                      ((688, 978, 5), 90), 
-                      ((940, 958, 3), 100)]
+        keyPoints = [ ((158, 5, 10), -30), 
+                      ((1316, 6, 8), 120), 
+                      ((688, 8, 5), 90), 
+                      ((940, 6, 3), 100)]
         step = 50
         angleMove = 10
         generatedPoints = []
@@ -39,11 +39,13 @@ class cameraPathGenerator:
             if (angle < keyAngles[i]):
                 while (angle < keyAngles[i]):
                     angle += angleMove
-                    generatedPoints.append(((x, y, z), angle))
+                    quatMat = self._angleToQuatMat(angle)
+                    generatedPoints.append(((x, y, z), quatMat))
             else:
                 while (angle > keyAngles[i]):
                     angle -= angleMove
-                    generatedPoints.append(((x, y, z), angle))
+                    quatMat = self._angleToQuatMat(angle)
+                    generatedPoints.append(((x, y, z), quatMat))
             
             # Interpolate x and angle
             signedStep = step
@@ -63,10 +65,33 @@ class cameraPathGenerator:
             while x == keyX[i] or (x - keyX[i])*(x - keyX[i+1]) < 0:
                 z = int(keyZ[i] + (x - keyX[i]) * slopeZ)
                 y = int(keyY[i] + (x - keyX[i]) * slopeY)
-                generatedPoints.append(((x, y, z), angle)) 
+                quatMat = self._angleToQuatMat(angle)
+                generatedPoints.append(((x, y, z), quatMat)) 
                 
                 x += signedStep
                 angle += signedAngleMove
                 
         return generatedPoints
+    
+    ##################### SUPPORT FUNCTIONS ##############################
+    def _angleToQuatMat(self, angle):
+        worldQuat = [math.cos(-angle/2), 0, math.sin(-angle/2), 0]
+        initialQuatMat = np.matrix(np.identity(3))
+        rotatedQuatMat = initialQuatMat * self._quat2rot(worldQuat)
+        
+        return rotatedQuatMat
+
+    def _quat2rot(self, q):
+        result = np.matrix(np.zeros([3,3]))
+        result[0, 0] = q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]
+        result[0, 1] = 2 * (q[1] * q[2] - q[0] * q[3])
+        result[0, 2] = 2 * (q[1] * q[3] + q[0] * q[2])
+        result[1, 0] = 2 * (q[1] * q[2] + q[0] * q[3])
+        result[1, 1] = q[0] * q[0] + q[2] * q[2] - q[1] * q[1] - q[3] * q[3]
+        result[1, 2] = 2 * (q[2] * q[3] - q[0] * q[1])
+        result[2, 0] = 2 * (q[1] * q[3] - q[0] * q[2])
+        result[2, 1] = 2 * (q[2] * q[3] + q[0] * q[1])
+        result[2, 2] = q[0] * q[0] + q[3] * q[3] - q[1] * q[1] - q[2] * q[2]
+
+        return result
     
