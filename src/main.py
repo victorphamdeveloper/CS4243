@@ -168,7 +168,7 @@ class CS4243Project(QtGui.QWidget):
 
 	# Main function to intialize the processing logic
 	def generateButtonClicked(self):
-		isTestingLayout = True
+		isTestingLayout = False
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
 		# Pre Process
@@ -197,7 +197,7 @@ class CS4243Project(QtGui.QWidget):
 
 		# Perspective Projection
 		start = current_milli_time()
-		perspectiveProjector = PerspectiveProjector()
+		perspectiveProjector = PerspectiveProjector(isTestingLayout)
 		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
 											self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
 											0]
