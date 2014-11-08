@@ -191,7 +191,7 @@ class CS4243Project(QtGui.QWidget):
 		# Perspective Projection
 		start = current_milli_time()
 		perspectiveProjector = PerspectiveProjector()
-		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 2 / 3.0, self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 0]
+		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH *2 / 3.0, self.IMAGE_ORIGINAL_HEIGHT * 5 / 10.0, 0]
 		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 		#perspectiveProjector.testAlignmentByUsingDefaultColor(interpolatedData)
 		perspectiveProjector.fillColor(interpolatedData, cameraPosition, orientation)
