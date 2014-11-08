@@ -107,6 +107,10 @@ class PerspectiveProjector:
 					dstGroupMap[coord] = group
 				else:
 					if(dstGroupMap[coord]['dist'] > group['dist']):
+						#Assign default wall color to hidden surface
+						for point in dstGroupMap[coord]['points']:
+							groupKey = dstGroupMap[coord]['group']
+							data[groupKey]['colors'][point] = image[400][400]			
 						dstGroupMap[coord] = group
 
 		# Assign front colors
