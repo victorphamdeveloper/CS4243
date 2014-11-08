@@ -37,7 +37,7 @@ class PerspectiveProjector:
 		image = cv2.resize(image, imageSize)
 		width = image.shape[1]
 		height = image.shape[0]
-		groupColorMap = {}
+		dstGroupMap = {}
 		isSideWallGroupMap = {}
 		isFlatRoofGroupMap = {}
 
@@ -46,7 +46,7 @@ class PerspectiveProjector:
 			# Projection
 			projectedCorners = []
 			groupPoints = group['corners'] + group['points'] 
-			groupMap = {}
+			srcGroupMap = {}
 			for i in range(len(groupPoints)):
 				point = groupPoints[i]
 				pointArr = np.asarray(point)
@@ -65,16 +65,16 @@ class PerspectiveProjector:
 					if(i < len(group['corners'])):
 						projectedCorners.append(projectedPoint)
 					distance = la.norm(initialCameraPosition - pointArr)
-					if(not projectedPoint in groupMap):
-						groupMap[projectedPoint] = [point]
+					if(not projectedPoint in srcGroupMap):
+						srcGroupMap[projectedPoint] = [point]
 					else:
-						groupMap[projectedPoint].append(point)
-			groupColors = {}
-			# Matching colors
+						srcGroupMap[projectedPoint].append(point)
+
+			# Filter hidden surface
 			src = self.verticalReshape(projectedCorners)
 			dst = self.verticalReshape(group['2Dpoints'])
 			transformationMatrix, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
-			finalSrc = groupMap.keys()
+			finalSrc = srcGroupMap.keys()
 			finalDst = np.int32(cv2.perspectiveTransform(
 																									self.verticalReshape(finalSrc), 
 																									transformationMatrix))
@@ -88,6 +88,7 @@ class PerspectiveProjector:
 				isFlatRoofGroupMap[groupKey] = True
 				continue
 
+			tempGroupMap = {}
 			for i in range(len(finalDst)):
 				dstCoord = tuple(finalDst[i].ravel())
 				if(dstCoord[0] < 0 or dstCoord[0] >= self.IMAGE_ORIGINAL_WIDTH 
@@ -95,20 +96,24 @@ class PerspectiveProjector:
 													 or dstCoord[1] >= self.IMAGE_ORIGINAL_HEIGHT):
 					continue
 				srcCoord = finalSrc[i]
-				if(not dstCoord in groupColorMap):
-					groupColorMap[dstCoord] = {}
-				for point in groupMap[srcCoord]:
-					if(not point in groupColorMap[dstCoord]):
-						groupColorMap[dstCoord][point] = []
-					groupColorMap[dstCoord][point].append(groupKey)
+				if(not dstCoord in tempGroupMap):
+					tempGroupMap[dstCoord] = {'group': groupKey, 'dist': sys.maxint, 'points': []}
+				for point in srcGroupMap[srcCoord]:
+					if(point[2] < tempGroupMap[dstCoord]['dist']):
+						tempGroupMap[dstCoord]['dist'] = point[2]
+					tempGroupMap[dstCoord]['points'].append(point)
+			for coord, group in tempGroupMap.iteritems():
+				if(not coord in dstGroupMap):
+					dstGroupMap[coord] = group
+				else:
+					if(dstGroupMap[coord]['dist'] > group['dist']):
+						dstGroupMap[coord] = group
 
 		# Assign front colors
-		for coord, group in groupColorMap.iteritems():
-			filteredGroup = self.filterAlignedPoints(group, initialCameraPosition)
-			for point, groupKeys in filteredGroup.iteritems():
-					for groupKey in groupKeys:
-						if(not groupKey in isSideWallGroupMap and not groupKey in isFlatRoofGroupMap):
-							data[groupKey]['colors'][point] = image[round(coord[1])][round(coord[0])]	
+		for coord, group in dstGroupMap.iteritems():
+			groupKey = group['group']
+			for point in group['points']:
+				data[groupKey]['colors'][point] = image[round(coord[1])][round(coord[0])]	
 		
 		# Assign colors for remaining hidden points
 		for groupKey, group in data.iteritems():
@@ -116,7 +121,11 @@ class PerspectiveProjector:
 			if(groupKey in isSideWallGroupMap or groupKey in isFlatRoofGroupMap):
 				for point in group['points']:
 					group['colors'][point] = image[400][400]
-			# Other Hidden Surfaces to be implemented
+			else: # Other Hidden Surfaces to be implemented
+				for point in group['points']:
+					if not point in group['colors']:
+						group['colors'][point] = np.array([255, 255, 255])
+
 
 		for key, group in data.iteritems():
 			group['points'] = None
@@ -326,34 +335,3 @@ class PerspectiveProjector:
 		out[2][2] = np.power(q0, 2) + np.power(q3, 2) - np.power(q1, 2) - np.power(q2, 2)
 
 		return np.matrix(out)
-
-	def filterAlignedPoints(self, pointDict, cameraPosition):
-		filteredPointDict = pointDict
-		keys = pointDict.keys()
-		length = len(keys)
-		points = [0, 0, 0] * length
-		deletedKeys = set()
-		
-		for i in range(length):
-			points[i] = np.array(keys[i])
-			
-		for i in range(length):
-			for j in xrange(i + 1, length - 1):
-				if (keys[i] not in deletedKeys) and (keys[j] not in deletedKeys) and (self.isAligned(cameraPosition, points[i], points[j])):
-					if (la.norm(cameraPosition - points[i]) > la.norm(cameraPosition - points[j])):
-						del pointDict[keys[i]]
-						deletedKeys.add(keys[i])
-					else:
-						del pointDict[keys[j]]
-						deletedKeys.add(keys[j])  
-					
-		return filteredPointDict
-	
-	def isAligned(self, point1, point2, point3):
-		vector12 = point2 - point1
-		vector13 = point3 - point1
-		crossProduct = np.cross(vector12, vector13)
-		isPointsAligned = (np.count_nonzero(crossProduct) == 0)
-		
-		return isPointsAligned
-

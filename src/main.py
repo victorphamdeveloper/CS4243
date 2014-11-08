@@ -216,12 +216,10 @@ class CS4243Project(QtGui.QWidget):
 																											cameraPosition, 
 																											orientation )
 		print 'Time taken for perspective projection: ', (current_milli_time() - start), 'ms'
-		if isTestingLayout:
-			imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
+		imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
 														 	int(self.IMAGE_ORIGINAL_WIDTH),3), 
 															np.uint8)
-		else:
-			imageFrame = cv2.imread("images/project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+		#imageFrame = cv2.imread("images/project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 		imageFrame = cv2.resize(imageFrame, (800, 600))
 		for point, color in results.iteritems():
 			x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
