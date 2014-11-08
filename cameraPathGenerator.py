@@ -67,23 +67,3 @@ class cameraPathGenerator:
                 
         return generatedPoints
     
-    """def testCameraPath(self, path):
-        img = cv2.imread("project.jpg")
-        
-        radius = 5
-        thickness = -1
-        lineType = 8
-        shift = 0
-        for ((x, y, z), angle) in path:
-            cv2.circle(img, (x,y), radius, (0, 0, 255, 0), thickness, lineType, shift)
-        
-        winname = "imageWin"
-        win = cv.NamedWindow(winname, cv.CV_WINDOW_AUTOSIZE)
-        img = cv2.resize(img, (800, 600))
-        cv2.imshow('imageWin', img)
-        cv2.waitKey(0)
-        cv.DestroyWindow(winname)
-        
-cameraPathGenerator = cameraPathGenerator()
-path = cameraPathGenerator.generateCameraPath()
-cameraPathGenerator.testCameraPath(path)"""
