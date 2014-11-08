@@ -59,13 +59,21 @@ class PerspectiveProjector:
 			transformationMatrix, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
 			finalSrc = groupMap.keys()
 			finalDst = np.int32(cv2.perspectiveTransform(np.float32(finalSrc).reshape(-1, 1, 2), transformationMatrix))
+			isSideWall = (group['2Dpoints'][0][0] == group['2Dpoints'][1][0] == group['2Dpoints'][2][0] == group['2Dpoints'][3][0])
+			isFlatRoof = (group['corners'][0][1] == group['corners'][1][1] == group['corners'][2][1] == group['corners'][3][1]) 
 			for i in range(len(finalDst)):
 				dstCoord = finalDst[i].ravel()
 				if(dstCoord[0] < 0 or dstCoord[0] >= self.IMAGE_ORIGINAL_WIDTH or dstCoord[1] < 0 or dstCoord[1] >= self.IMAGE_ORIGINAL_HEIGHT):
 					continue
 				srcCoord = finalSrc[i]
 				for point in groupMap[srcCoord]:
-					groupColors[point] = image[round(dstCoord[1])][round(dstCoord[0])]
+					if isSideWall or isFlatRoof:
+						#This is a hidden surface
+						groupColors[point] = image[400, 400]
+	
+					else:	
+						groupColors[point] = image[round(dstCoord[1])][round(dstCoord[0])]
+					
 			group['colors'] = groupColors
 
 		for key, group in data.iteritems():
