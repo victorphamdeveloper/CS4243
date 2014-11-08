@@ -191,16 +191,18 @@ class CS4243Project(QtGui.QWidget):
 		# Perspective Projection
 		start = current_milli_time()
 		perspectiveProjector = PerspectiveProjector()
-		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 2 / 3.0, self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 0]
+		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 0]
 		orientation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 		#perspectiveProjector.testAlignmentByUsingDefaultColor(interpolatedData)
 		perspectiveProjector.fillColor(interpolatedData, cameraPosition, orientation)
+		print 'Time taken for filling color: ', (current_milli_time() - start), 'ms'
 
 		# Test Perspective Performance
+		start = current_milli_time()
 		results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), cameraPosition, orientation )
 		print 'Time taken for perspective projection: ', (current_milli_time() - start), 'ms'
-		imageFrame = np.zeros((int(self.IMAGE_ORIGINAL_HEIGHT),int(self.IMAGE_ORIGINAL_WIDTH),3), np.uint8)
-		#imageFrame = cv2.imread("project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+		#imageFrame = np.zeros((int(self.IMAGE_ORIGINAL_HEIGHT),int(self.IMAGE_ORIGINAL_WIDTH),3), np.uint8)
+		imageFrame = cv2.imread("bg.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 		imageFrame = cv2.resize(imageFrame, (800, 600))
 		for point, color in results.iteritems():
 			x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
@@ -213,7 +215,7 @@ class CS4243Project(QtGui.QWidget):
 		imageFrame = cv2.resize(imageFrame, (800, 600))
 		cv2.imshow('imageWin', imageFrame)
 		cv2.waitKey(0)
-		cv.DestroyWindow(winname)
+		cv2.destroyAllWindows()
 		return
 
 	def updateGroup(self, changedIndex):

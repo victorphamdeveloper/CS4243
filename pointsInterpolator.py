@@ -113,8 +113,10 @@ class PointsInterpolator:
 
 		interpolatedPoints = []
 		planeFormula = group['planeFormula']
-		stepMaxAxis = (maxValues[maxAxis] - minValues[maxAxis]) / 100.0
-		stepSecondMaxAxis = (maxValues[secondMaxAxis] - minValues[secondMaxAxis]) / 100.0
+		#stepMaxAxis = (maxValues[maxAxis] - minValues[maxAxis]) / 100.0
+		#stepSecondMaxAxis = (maxValues[secondMaxAxis] - minValues[secondMaxAxis]) / 100.0
+		stepMaxAxis = 1.0
+		stepSecondMaxAxis = 1.0
 		for m in self._drange(minValues[maxAxis], maxValues[maxAxis] + 1, stepMaxAxis):
 			for n in self._drange(minValues[secondMaxAxis], maxValues[secondMaxAxis] + 1, stepSecondMaxAxis):
 				if(not PointsInterpolator.pointInPolygon(n, m, corners)):

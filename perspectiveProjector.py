@@ -26,6 +26,7 @@ class PerspectiveProjector:
 
 	# Fill the color for every point in each group from the data
 	def fillColor(self, data, initialCameraPosition, orientation):
+		print "Start filling color..."
 		image = cv2.imread("project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 		image = cv2.resize(image, (self.IMAGE_ORIGINAL_WIDTH, self.IMAGE_ORIGINAL_HEIGHT))
 		width = image.shape[1]
@@ -70,6 +71,8 @@ class PerspectiveProjector:
 		for key, group in data.iteritems():
 			group['points'] = None
 			group['map'] = None
+
+		print "Finish filling color"
 		return
 
 	def testAlignmentByUsingDefaultColor(self, data):
@@ -183,7 +186,7 @@ class PerspectiveProjector:
 								tempCount[(x, y)] = counter[4]
 								tempDist[(x, y)] = counter[3] / counter[4]
 								break 
-			''' 
+			'''
 			for point in tempColor:
 				color = tempColor[point]
 				count = tempCount[point]
