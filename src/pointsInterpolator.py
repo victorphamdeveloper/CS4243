@@ -7,7 +7,8 @@ import cv2.cv as cv
 
 # This class is used for interpolating points
 class PointsInterpolator:
-	def __init__(self):
+	def __init__(self, isTestingLayout):
+		self.isTestingLayout = isTestingLayout
 		return
 
 	"""
@@ -97,7 +98,9 @@ class PointsInterpolator:
 					minValues[i] = point[i]
 				if(point[i] > maxValues[i]):
 					maxValues[i] = point[i]
-		disRank = [maxValues[0] - minValues[0], maxValues[1] - minValues[1], maxValues[2] - minValues[2]]
+		disRank = [maxValues[0] - minValues[0], 
+							 maxValues[1] - minValues[1], 
+							 maxValues[2] - minValues[2]]
 		disRank.sort()
 		maxAxis = secondMaxAxis = thirdMaxAxis = -1
 		for i in range(3):
@@ -113,10 +116,12 @@ class PointsInterpolator:
 
 		interpolatedPoints = []
 		planeFormula = group['planeFormula']
-		#stepMaxAxis = (maxValues[maxAxis] - minValues[maxAxis]) / 100.0
-		#stepSecondMaxAxis = (maxValues[secondMaxAxis] - minValues[secondMaxAxis]) / 100.0
-		stepMaxAxis = 1.0
-		stepSecondMaxAxis = 1.0
+		if self.isTestingLayout :
+			stepMaxAxis = (maxValues[maxAxis] - minValues[maxAxis]) / 100.0
+			stepSecondMaxAxis = (maxValues[secondMaxAxis] - minValues[secondMaxAxis]) / 100.0
+		else:
+			stepMaxAxis = 1.0
+			stepSecondMaxAxis = 1.0
 		for m in self._drange(minValues[maxAxis], maxValues[maxAxis] + 1, stepMaxAxis):
 			for n in self._drange(minValues[secondMaxAxis], maxValues[secondMaxAxis] + 1, stepSecondMaxAxis):
 				if(not PointsInterpolator.pointInPolygon(n, m, corners)):
@@ -124,7 +129,9 @@ class PointsInterpolator:
 				point = [0, 0, 0]
 				point[maxAxis] = m
 				point[secondMaxAxis] = n
-				point[thirdMaxAxis] = (planeFormula[3] - planeFormula[maxAxis] * m - planeFormula[secondMaxAxis] * n ) / planeFormula[thirdMaxAxis]
+				point[thirdMaxAxis] = (planeFormula[3] 
+															- planeFormula[maxAxis] * m 
+															- planeFormula[secondMaxAxis] * n ) / planeFormula[thirdMaxAxis]
 				interpolatedPoints.append(tuple(point))
 		group['points'] = interpolatedPoints
 		return

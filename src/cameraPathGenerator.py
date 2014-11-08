@@ -16,7 +16,10 @@ class cameraPathGenerator:
         [((x1, y1, z1), angle1), (x2, y2, z2), angle2),...]
     """
     def generateCameraPath(self):
-        keyPoints = [((158, 1192, 10), -30), ((1316, 1121, 8), 120), ((688, 978, 5), 90), ((940, 958, 3), 100)]
+        keyPoints = [ ((158, 1192, 10), -30), 
+                      ((1316, 1121, 8), 120), 
+                      ((688, 978, 5), 90), 
+                      ((940, 958, 3), 100)]
         step = 50
         angleMove = 10
         generatedPoints = []

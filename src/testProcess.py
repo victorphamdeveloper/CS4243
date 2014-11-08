@@ -15,7 +15,7 @@ IMAGE_ORIGINAL_HEIGHT = 600
 
 # Retrieve data
 dataGenerator = DataGenerator()
-groupsData = dataGenerator.loadDataFromFile("allData.json")
+groupsData = dataGenerator.loadDataFromFile("data/allData.json")
 
 # Interpolate data
 start = current_milli_time()
