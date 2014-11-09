@@ -7,6 +7,8 @@ import time
 # Class Dependence
 from pointsInterpolator import *
 from perspectiveProjector import *
+from videoGenerator import *
+from cameraPathGenerator import *
 from dataGenerator import *
 
 # External Dependence
@@ -169,12 +171,18 @@ class CS4243Project(QtGui.QWidget):
 		self.updateGroup(0)
 		return
 
-	# Main function to intialize the processing logic
+	###########################################################
+	#                   MAIN LOGIC FUNCTION                   #		
+	###########################################################
 	def generateButtonClicked(self):
 		isTestingLayout = True
+		isGeneratingVideo = True
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
-		# Pre Process
+		
+		############################
+		# 			PRE-PROCESS      	 #		
+		############################
 		for key in self.groups.keys():
 			groupsData[key] = {}
 			data = groupsData[key]
@@ -192,13 +200,17 @@ class CS4243Project(QtGui.QWidget):
 				data['points'].append((xCoord, yCoord, zCoord))
 				data['2Dpoints'].append((uCoord, vCoord))
 
-		# Interpolation
+		############################
+		# 			INTERPOLATION      #		
+		############################
 		start = current_milli_time()
 		pointsInterpolator = PointsInterpolator(isTestingLayout)
 		interpolatedData = pointsInterpolator.interpolate(groupsData)
 		print 'Time taken for interpolation: ', (current_milli_time() - start), 'ms'
 
-		# Fill Color
+		############################
+		# 			FILL COLOR      	 #		
+		############################
 		start = current_milli_time()
 		perspectiveProjector = PerspectiveProjector(isTestingLayout)
 		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
@@ -213,39 +225,67 @@ class CS4243Project(QtGui.QWidget):
 			perspectiveProjector.fillColor(interpolatedData, cameraPosition, orientation)
 		print 'Time taken for filling color: ', (current_milli_time() - start), 'ms'
 
-		# Perspective Projection
-		start = current_milli_time()
-		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
-											self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
-											1100] 
-		if(not isTestingLayout):
-			results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
-																												cameraPosition, 
-																												orientation )
-		else:
-			results = perspectiveProjector.performPerspectiveWithYRotatedAngle(copy.deepcopy(interpolatedData), 
-																												cameraPosition, 
-																												-np.pi / 2.0)
-		print 'Time taken for perspective projection: ', (current_milli_time() - start), 'ms'
+		if not isGeneratingVideo:
+			########################################
+			# 			PERSPECTIVE PROJECTION      	 #		
+			########################################
+			start = current_milli_time()
+			cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
+												self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
+												0] 
+			if(not isTestingLayout):
+				results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
+																													cameraPosition, 
+																													orientation )
+			else:
+				results = perspectiveProjector.performPerspectiveWithYRotatedAngle(copy.deepcopy(interpolatedData), 
+																													cameraPosition, 
+																													0)
+			print 'Time taken for perspective projection: ', (current_milli_time() - start), 'ms'
+			
+			########################################
+			#							FRAME DISPLAY      	 		 #		
+			########################################
+			imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
+															 	int(self.IMAGE_ORIGINAL_WIDTH),3), 
+																np.uint8)
+			imageFrame = cv2.resize(imageFrame, (800, 600))
+			for point, color in results.iteritems():
+				x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
+				y = int(point[1] + self.IMAGE_ORIGINAL_HEIGHT / 2.0)
+				if(0 <= x and x < self.IMAGE_ORIGINAL_WIDTH and 0 <= y and y < self.IMAGE_ORIGINAL_HEIGHT):
+					imageFrame[y][x] = [color[0], color[1], color[2]]
 		
-		# Frame Display
-		imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
-														 	int(self.IMAGE_ORIGINAL_WIDTH),3), 
-															np.uint8)
-		#imageFrame = cv2.imread("images/project.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-		imageFrame = cv2.resize(imageFrame, (800, 600))
-		for point, color in results.iteritems():
-			x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
-			y = int(point[1] + self.IMAGE_ORIGINAL_HEIGHT / 2.0)
-			if(0 <= x and x < self.IMAGE_ORIGINAL_WIDTH and 0 <= y and y < self.IMAGE_ORIGINAL_HEIGHT):
-				imageFrame[y][x] = [color[0], color[1], color[2]]
-	
-		winname = "imageWin"
-		win = cv.NamedWindow(winname, cv.CV_WINDOW_AUTOSIZE)
-		imageFrame = cv2.resize(imageFrame, (800, 600))
-		cv2.imshow('imageWin', imageFrame)
-		cv2.waitKey(0)
-		cv2.destroyAllWindows()
+			winname = "imageWin"
+			win = cv.NamedWindow(winname, cv.CV_WINDOW_AUTOSIZE)
+			imageFrame = cv2.resize(imageFrame, (800, 600))
+			cv2.imshow('imageWin', imageFrame)
+			cv2.waitKey(0)
+			cv2.destroyAllWindows()
+		else:
+			########################################
+			# 					VIDEO GENERATOR      	 		 #			
+			########################################
+			videoGenerator = VideoGenerator()
+			pathGenerator = CameraPathGenerator()
+			generatedPath = pathGenerator.generateCameraPath()
+			generatedFrames = []
+			for point in generatedPath:
+				results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
+																													point[0], 
+																													point[1])
+				imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
+															 	int(self.IMAGE_ORIGINAL_WIDTH),3), 
+																np.uint8)
+				imageFrame = cv2.resize(imageFrame, (800, 600))
+				for point, color in results.iteritems():
+					x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
+					y = int(point[1] + self.IMAGE_ORIGINAL_HEIGHT / 2.0)
+					if(0 <= x and x < self.IMAGE_ORIGINAL_WIDTH and 0 <= y and y < self.IMAGE_ORIGINAL_HEIGHT):
+						imageFrame[y][x] = [color[0], color[1], color[2]]
+				generatedFrames.append(imageFrame)
+			videoGenerator.generateVideo(generatedFrames)
+
 		return
 
 	def updateGroup(self, changedIndex):
