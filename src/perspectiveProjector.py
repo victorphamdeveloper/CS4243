@@ -40,6 +40,7 @@ class PerspectiveProjector:
 		dstGroupMap = {}
 		isSideWallGroupMap = {}
 		isFlatRoofGroupMap = {}
+		isBoundaryWallGroupMap = {}
 
 		for groupKey, group in data.iteritems():
 			group['colors'] = {}
@@ -78,6 +79,10 @@ class PerspectiveProjector:
 			finalDst = np.int32(cv2.perspectiveTransform(
 																									self.verticalReshape(finalSrc), 
 																									transformationMatrix))
+			isBoundaryWall = self.isOutOfFrame(group['2Dpoints'][0]) or self.isOutOfFrame(group['2Dpoints'][1]) or self.isOutOfFrame(group['2Dpoints'][2]) or self.isOutOfFrame(group['2Dpoints'][3])
+			if isBoundaryWall:
+				isBoundaryWallGroupMap[groupKey] = True
+
 			isSideWall = (group['2Dpoints'][0][0] == group['2Dpoints'][1][0] == group['2Dpoints'][2][0] == group['2Dpoints'][3][0])
 			if isSideWall :
 				isSideWallGroupMap[groupKey] = True
@@ -125,7 +130,11 @@ class PerspectiveProjector:
 			if(groupKey in isSideWallGroupMap or groupKey in isFlatRoofGroupMap):
 				for point in group['points']:
 					group['colors'][point] = image[400][400]
-			else: # Other Hidden Surfaces to be implemented
+			elif (groupKey in isBoundaryWallGroupMap): # Other Hidden Surfaces to be implemented
+				for point in group['points']:
+					if not point in group['colors']:
+						group['colors'][point] = image[400][400]
+			else:
 				for point in group['points']:
 					if not point in group['colors']:
 						group['colors'][point] = np.array([255, 255, 255])
@@ -136,6 +145,9 @@ class PerspectiveProjector:
 
 		print "Finish filling color"
 		return
+
+	def isOutOfFrame(self, point):
+		return (point[0] < 0 or point[0] >= self.IMAGE_ORIGINAL_WIDTH or point[1] < 0 or point[1] >= self.IMAGE_ORIGINAL_HEIGHT)
 
 	def verticalReshape(self, arr):
 		return np.float32(arr).reshape(-1, 1, 2)
