@@ -29,74 +29,65 @@ class CameraPathGenerator:
         point1 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
                    self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
                    0), 0)
-        point2 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0 + 1, 
-                   self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0 + 1, 
-                   0 + 1), 10)
-        point3 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0 + 2, 
-                   self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0 + 2, 
-                   0 + 2), 0)
-        point4 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0 + 3, 
-                   self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0 + 3, 
-                   0 + 3), -10)
+        point2 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
+                   self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
+                   300), 0)
+        point3 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
+                   self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
+                   600), 0)
+        point4 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
+                   self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
+                   900), 0)
         keyPointsAndAngles = [point1, point2, point3, point4]
         generatedPoints = []
         
+        numKeys = len(keyPointsAndAngles)
         keyPoints = [point for (point, angle) in keyPointsAndAngles]
         keyAngles= [angle for (point, angle) in keyPointsAndAngles]
-        keyX = [int(point[0]) for point in keyPoints]
-        keyY = [int(point[1]) for point in keyPoints]
-        keyZ = [int(point[2]) for point in keyPoints]
+        keyX = [point[0] for point in keyPoints]
+        keyY = [point[1] for point in keyPoints]
+        keyZ = [point[2] for point in keyPoints]
         
         # Calculate step length of camera path
-        length = 0
-        for i in range(len(keyPoints) - 1):
-            length += la.norm(np.asarray(keyPoints[i+1]) - np.asarray(keyPoints[i]))
-        
-        step = length / self.NUM_FRAMES
+        totalLength = 0
+        framesCount = []
+        for i in range(numKeys - 1):
+            count = 0
+            length = la.norm(np.asarray(keyPoints[i+1]) - np.asarray(keyPoints[i]))
+            totalLength += length
+            count += int(self.NUM_FRAMES / (numKeys - 1))
+            if(i == numKeys - 2):
+                count += self.NUM_FRAMES % (numKeys - 1)
+            framesCount.append(count)
             
         # Generate camera path            
-        for i in range(len(keyPoints) - 1):
-            x = keyX[i]
-            y = keyY[i] 
-            z = keyZ[i]
-            angle = keyAngles[i]
+        for i in range(numKeys - 1):
+            numFrames = framesCount[i]
+            currentX = keyX[i]
+            nextX = keyX[i+1]
+            currentY = keyY[i] 
+            nextY = keyY[i+1]
+            currentZ = keyZ[i]
+            nextZ = keyZ[i+1]
+            currentAngle = keyAngles[i]
+            nextAngle = keyAngles[i+1]
             
-            # Calculate line slopes
-            xDifference = keyX[i+1] - keyX[i]
-            yDifference = keyY[i+1] - keyY[i]
-            zDifference = keyZ[i+1] - keyZ[i]
-            slopeZ = zDifference / xDifference
-            slopeY = (yDifference * yDifference) / (xDifference * zDifference) 
-
-            # Calculate step for x
-            stepX = xDifference * step / la.norm(np.asarray(keyPoints[i+1]) - np.asarray(keyPoints[i]))
-            if xDifference % stepX == 0:
-                numX = int(xDifference / stepX)
-            else:
-                numX = int(xDifference / stepX) + 1 
-            
-            # Calculate angle move
-            angleMove = (keyAngles[i+1] - keyAngles[i]) / numX
-            
-            # Interpolate x and angle
-            while x == keyX[i] or (x - keyX[i])*(x - keyX[i+1]) < 0:
-                z = int(keyZ[i] + (x - keyX[i]) * slopeZ)
-                y = int(keyY[i] + np.sqrt((x - keyX[i]) * (z - keyZ[i]) * slopeY))
+            step = 1.0 / (numFrames)
+            for i in range(numFrames):
+                ratio = step * i
+                interpolatedX = currentX * (1 - ratio) + ratio * nextX
+                interpolatedY = currentY * (1 - ratio) + ratio * nextY
+                interpolatedZ = currentZ * (1 - ratio) + ratio * nextZ
+                angle = currentAngle + ratio * (nextAngle - currentAngle)
                 quatMat = self._angleToQuatMat(angle)
-                generatedPoints.append(((x, y, z), quatMat)) 
-                
-                x += stepX
-                angle += angleMove
-                
+                generatedPoints.append(((interpolatedX, interpolatedY, interpolatedZ), quatMat)) 
+
         return generatedPoints
     
     ##################### SUPPORT FUNCTIONS ##############################
     def _angleToQuatMat(self, angle):
-        worldQuat = [math.cos(-angle/2), 0, math.sin(-angle/2), 0]
-        initialQuatMat = np.matrix(np.identity(3))
-        rotatedQuatMat = initialQuatMat * self._quat2rot(worldQuat)
-        
-        return rotatedQuatMat
+        worldQuat = [math.cos(angle/2.0), 0, math.sin(angle/2.0), 0]
+        return self._quat2rot(worldQuat)
 
     def _quat2rot(self, q):
         result = np.matrix(np.zeros([3,3]))

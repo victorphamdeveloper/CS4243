@@ -33,3 +33,5 @@ class VideoGenerator:
             videoWriter.write(imageFrame)
         videoWriter.release()
         videoWriter = None
+        print "Finish Generating Video !!!"
+        return
