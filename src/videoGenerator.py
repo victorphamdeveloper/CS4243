@@ -1,11 +1,13 @@
+# System Dependence
 import sys
+
+# External Dependence
 import cv2.cv as cv
 import cv2
-import numpy as np
-import numpy.linalg as la
-import copy
 
-# This class is used for generating video
+###########################################################
+#                   Video Generator                       #
+###########################################################
 class VideoGenerator:
     NUM_FRAMES_PER_SECONDS = 25
     FRAME_WIDTH = 800

@@ -1,3 +1,4 @@
+# System Dependence
 import sys
 import random
 
@@ -10,7 +11,9 @@ import cv2.cv as cv
 # Class Dependence
 from pointsInterpolator import *
 
-# This class is used for performing perspective projection
+###########################################################
+#                   Perspective Projector                 #
+###########################################################
 class PerspectiveProjector:
 	# Constant declaration
 	IMG_NAME = "project.jpg"
@@ -65,11 +68,10 @@ class PerspectiveProjector:
 					projectedPoint = (int(projectedX), int(projectedY))
 					if(i < len(group['corners'])):
 						projectedCorners.append(projectedPoint)
-					distance = la.norm(initialCameraPosition - pointArr)
 					if(not projectedPoint in srcGroupMap):
-						srcGroupMap[projectedPoint] = [point]
+						srcGroupMap[projectedPoint] = [pointArr]
 					else:
-						srcGroupMap[projectedPoint].append(point)
+						srcGroupMap[projectedPoint].append(pointArr)
 
 			# Filter hidden surface
 			src = self.verticalReshape(projectedCorners)
@@ -79,6 +81,8 @@ class PerspectiveProjector:
 			finalDst = np.int32(cv2.perspectiveTransform(
 																									self.verticalReshape(finalSrc), 
 																									transformationMatrix))
+
+			# Check for hidden groups
 			isBoundaryWall = self.isOutOfFrame(group['2Dpoints'][0]) or self.isOutOfFrame(group['2Dpoints'][1]) or self.isOutOfFrame(group['2Dpoints'][2]) or self.isOutOfFrame(group['2Dpoints'][3])
 			if isBoundaryWall:
 				isBoundaryWallGroupMap[groupKey] = True
@@ -104,18 +108,15 @@ class PerspectiveProjector:
 				if(not dstCoord in tempGroupMap):
 					tempGroupMap[dstCoord] = {'group': groupKey, 'dist': sys.maxint, 'points': []}
 				for point in srcGroupMap[srcCoord]:
-					if(point[2] < tempGroupMap[dstCoord]['dist']):
-						tempGroupMap[dstCoord]['dist'] = point[2]
+					distance = la.norm(initialCameraPosition - point)
+					if(distance < tempGroupMap[dstCoord]['dist']):
+						tempGroupMap[dstCoord]['dist'] = distance
 					tempGroupMap[dstCoord]['points'].append(point)
 			for coord, group in tempGroupMap.iteritems():
 				if(not coord in dstGroupMap):
 					dstGroupMap[coord] = group
 				else:
-					if(dstGroupMap[coord]['dist'] > group['dist']):
-						#Assign default wall color to hidden surface
-						for point in dstGroupMap[coord]['points']:
-							groupKey = dstGroupMap[coord]['group']
-							data[groupKey]['colors'][point] = image[400][400]			
+					if(dstGroupMap[coord]['dist'] > group['dist']):		
 						dstGroupMap[coord] = group
 
 		# Assign front colors
@@ -137,7 +138,7 @@ class PerspectiveProjector:
 			else:
 				for point in group['points']:
 					if not point in group['colors']:
-						group['colors'][point] = np.array([255, 255, 255])
+						group['colors'][point] = image[400][400]
 
 
 		for key, group in data.iteritems():
@@ -195,24 +196,8 @@ class PerspectiveProjector:
 			tempColor = {}
 			tempCount = {}
 			tempDist = {}
-			projectedCorners = []
 			minValues = [sys.maxint, sys.maxint]
 			maxValues = [0, 0]
-			for corner in group['corners']:
-				corner = np.asarray(corner)
-				den = np.dot(corner - cameraPosition, np.asarray(orientation)[2])
-				if(den > 0):
-					projectedX = (self.FOCAL_LENGTH 
-												* np.dot(corner - cameraPosition, np.asarray(orientation)[0]) 
-												* self.X_PIXEL_SCALING / den 
-												+ self.X_CENTER_OFFSET)
-					projectedY = (self.FOCAL_LENGTH 
-												* np.dot(corner - cameraPosition, np.asarray(orientation)[1]) 
-												* self.Y_PIXEL_SCALING / den 
-												+ self.Y_CENTER_OFFSET)
-					projectedCorner = (int(projectedX), int(projectedY))
-					projectedCorners.append(projectedCorner)
-			group['corners'] = projectedCorners
 			
 			for pointKey, color in pointDict.iteritems():
 				point = np.asarray(pointKey)
@@ -222,10 +207,18 @@ class PerspectiveProjector:
 												* np.dot(point - cameraPosition, np.asarray(orientation)[0]) 
 												* self.X_PIXEL_SCALING / den 
 												+ self.X_CENTER_OFFSET)
+					if(projectedX < minValues[0]):
+						minValues[0] = projectedX
+					if(projectedX > maxValues[0]):
+						maxValues[0] = projectedX
 					projectedY = (self.FOCAL_LENGTH 
 												* np.dot(point - cameraPosition, np.asarray(orientation)[1]) 
 												* self.Y_PIXEL_SCALING / den 
 												+ self.Y_CENTER_OFFSET)
+					if(projectedY < minValues[1]):
+						minValues[1] = projectedY
+					if(projectedY > maxValues[1]):
+						maxValues[1] = projectedY
 					projectedPoint = (int(projectedX), int(projectedY))
 					distance = la.norm(cameraPosition - point)
 					if(not projectedPoint in tempCount):
@@ -234,48 +227,49 @@ class PerspectiveProjector:
 					else:
 						tempCount[projectedPoint] += 1
 						accumulatedColor = tempColor[projectedPoint]
-						tempColor[projectedPoint] = (accumulatedColor[0] + color[0],
-													accumulatedColor[1] + color[1],
-													accumulatedColor[2] + color[2])
+						tempColor[projectedPoint] = (	accumulatedColor[0] + color[0],
+																					accumulatedColor[1] + color[1],
+																					accumulatedColor[2] + color[2])
 					tempDist[projectedPoint] = distance
 
-			for projectedCorner in projectedCorners:
-				for i in range(2):
-					if(projectedCorner[i] < minValues[i]):
-						minValues[i] = projectedCorner[i]
-					if(projectedCorner[i] > maxValues[i]):
-						maxValues[i] = projectedCorner[i]
 			if not self.isTestingLayout:
 				for x in xrange(minValues[0], maxValues[0] + 1, 1):
 					for y in xrange(minValues[1], maxValues[1] + 1, 1):
-						if(not (x, y) in tempColor 
-								and PointsInterpolator.pointInPolygon(x, y, projectedCorners)):
-							for i in xrange(1, 11):
-								points = []
-								for m in xrange(-i, i + 1, 1):
-									for n in xrange(-i, i + 1, 1):
-										if(np.abs(m) != i and np.abs(n) != i):
-											continue
-										point = (x + m, y + n)
-										if point in tempColor:
-											count = tempCount[point]
-											if(count > 1):
-												color = tempColor[point]
-												tempColor[point] = tuple([round(u / count) for u in color])
-												tempCount[point] = 1
-											points.append(point)
-								if(len(points) != 0):
-									counter = [0, 0, 0, 0, 0]
-									for point in points:
-										counter[0] += tempColor[point][0]
-										counter[1] += tempColor[point][1]
-										counter[2] += tempColor[point][2]
-										counter[3] += tempDist[point]
-										counter[4] += tempCount[point]
-									tempColor[(x, y)] = (counter[0], counter[1], counter[2])
-									tempCount[(x, y)] = counter[4]
-									tempDist[(x, y)] = counter[3] / counter[4]
-									break 
+						if(not (x, y) in tempColor):
+							count = 0
+							for i in xrange(1, 7):
+								if((x + i, y) in tempColor): count += 1
+								if((x - i, y) in tempColor): count += 1
+								if((x, y + i) in tempColor): count += 1
+								if((x, y - i) in tempColor): count += 1
+
+							if(count > 2):
+								for i in xrange(1, 7):
+									points = []
+									for m in xrange(-i, i + 1, 1):
+										for n in xrange(-i, i + 1, 1):
+											if(np.abs(m) != i and np.abs(n) != i):
+												continue
+											point = (x + m, y + n)
+											if point in tempColor:
+												count = tempCount[point]
+												if(count > 1):
+													color = tempColor[point]
+													tempColor[point] = tuple([round(u / count) for u in color])
+													tempCount[point] = 1
+												points.append(point)
+									if(len(points) != 0):
+										counter = [0, 0, 0, 0, 0]
+										for point in points:
+											counter[0] += tempColor[point][0]
+											counter[1] += tempColor[point][1]
+											counter[2] += tempColor[point][2]
+											counter[3] += tempDist[point]
+											counter[4] += tempCount[point]
+										tempColor[(x, y)] = (counter[0], counter[1], counter[2])
+										tempCount[(x, y)] = counter[4]
+										tempDist[(x, y)] = counter[3] / counter[4]
+										break 
 			
 			for point in tempColor:
 				color = tempColor[point]

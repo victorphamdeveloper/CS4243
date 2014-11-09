@@ -1,12 +1,17 @@
+# System Dependence
 from __future__ import division
+import math
 
+# External Dependence
 import cv2
 import cv2.cv as cv
 import numpy as np
 import numpy.linalg as la
-import math
 
-class cameraPathGenerator:
+###########################################################
+#                   Camera Path Generator                 #
+###########################################################
+class CameraPathGenerator:
     NUM_FRAMES = 300
     
     def __init__(self):

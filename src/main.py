@@ -1,3 +1,4 @@
+# System Dependence
 import sys
 import copy
 import json
@@ -14,7 +15,9 @@ import cv2
 import cv2.cv as cv
 import numpy as np
 
-
+###########################################################
+#                   Main Executable                       #
+###########################################################
 class CS4243Project(QtGui.QWidget):
 	# Constant Declaration
 	DIRECTIONS = ["None", "North", "South", "West", "East", "Upwards", "Downwards"]
