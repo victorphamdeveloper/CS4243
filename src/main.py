@@ -168,7 +168,7 @@ class CS4243Project(QtGui.QWidget):
 
 	# Main function to intialize the processing logic
 	def generateButtonClicked(self):
-		isTestingLayout = False
+		isTestingLayout = True
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
 		# Pre Process
@@ -195,7 +195,7 @@ class CS4243Project(QtGui.QWidget):
 		interpolatedData = pointsInterpolator.interpolate(groupsData)
 		print 'Time taken for interpolation: ', (current_milli_time() - start), 'ms'
 
-		# Perspective Projection
+		# Fill Color
 		start = current_milli_time()
 		perspectiveProjector = PerspectiveProjector(isTestingLayout)
 		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
@@ -210,12 +210,22 @@ class CS4243Project(QtGui.QWidget):
 			perspectiveProjector.fillColor(interpolatedData, cameraPosition, orientation)
 		print 'Time taken for filling color: ', (current_milli_time() - start), 'ms'
 
-		# Test Perspective Performance
+		# Perspective Projection
 		start = current_milli_time()
-		results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
-																											cameraPosition, 
-																											orientation )
+		cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
+											self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
+											1100] 
+		if(not isTestingLayout):
+			results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
+																												cameraPosition, 
+																												orientation )
+		else:
+			results = perspectiveProjector.performPerspectiveWithYRotatedAngle(copy.deepcopy(interpolatedData), 
+																												cameraPosition, 
+																												-np.pi / 2.0)
 		print 'Time taken for perspective projection: ', (current_milli_time() - start), 'ms'
+		
+		# Frame Display
 		imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
 														 	int(self.IMAGE_ORIGINAL_WIDTH),3), 
 															np.uint8)

@@ -21,7 +21,6 @@ class VideoGenerator:
                                 self.NUM_FRAMES_PER_SECONDS, 
                                 (self.FRAME_WIDTH, self.FRAME_HEIGHT))
 
-        #read through 0.jpg to total.jpg
         for imageFrame in frames:
             videoWriter.write(imageFrame)
 

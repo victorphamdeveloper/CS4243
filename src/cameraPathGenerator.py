@@ -5,7 +5,7 @@ import cv2.cv as cv
 import numpy as np
 import math
 
-class cameraPathGenerator:
+class CameraPathGenerator:
     def __init__(self):
         return
     

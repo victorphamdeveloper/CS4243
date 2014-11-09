@@ -185,7 +185,7 @@ class PerspectiveProjector:
 			for corner in group['corners']:
 				corner = np.asarray(corner)
 				den = np.dot(corner - cameraPosition, np.asarray(orientation)[2])
-				if(den != 0):
+				if(den > 0):
 					projectedX = (self.FOCAL_LENGTH 
 												* np.dot(corner - cameraPosition, np.asarray(orientation)[0]) 
 												* self.X_PIXEL_SCALING / den 
@@ -201,7 +201,7 @@ class PerspectiveProjector:
 			for pointKey, color in pointDict.iteritems():
 				point = np.asarray(pointKey)
 				den = np.dot(point - cameraPosition, np.asarray(orientation)[2])
-				if (den != 0):
+				if (den > 0):
 					projectedX = (self.FOCAL_LENGTH 
 												* np.dot(point - cameraPosition, np.asarray(orientation)[0]) 
 												* self.X_PIXEL_SCALING / den 
@@ -277,8 +277,7 @@ class PerspectiveProjector:
 
 	def performPerspectiveWithYRotatedAngle(self, data, initialCameraPosition, angle):
 		cameraRotationalAxes = self._quat2rot(self._getQuaternion(self.Y_ROTATIONAL_AXIS, angle))
-		cameraPos = self._translateCameraWithAngle(initialCameraPosition, self.Y_ROTATIONAL_AXIS, -angle)
-		return self.performPerspective(data, cameraPos, cameraRotationalAxes)
+		return self.performPerspective(data, initialCameraPosition, cameraRotationalAxes)
 
 	##################### SUPPORT FUNCTIONS ##############################
 	# Function for multiplying quaternion
@@ -306,14 +305,6 @@ class PerspectiveProjector:
 		cosAngle = np.cos(angle / 2.0)
 		sinAngle = np.sin(angle / 2.0)
 		return np.array([cosAngle, 0, sinAngle, 0])
-
-	# Function to translate the camera
-	def _translateCameraWithAngle(self, cameraPos, rotationalAxis, angle):
-		q = self._getQuaternion(rotationalAxis, angle)
-		negate_q = np.array([q[0], -q[1], -q[2], -q[3]])
-		cameraQuaternion = np.array([0, cameraPos[0], cameraPos[1], cameraPos[2]])
-		result = self._qualtmult(self._qualtmult(q, cameraQuaternion), negate_q)
-		return np.array([result[1], result[2], result[3]])
 
 	# Function to create rotation matrix from quaternion
 	def _quat2rot(self, q) :

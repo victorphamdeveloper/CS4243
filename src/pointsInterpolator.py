@@ -117,8 +117,8 @@ class PointsInterpolator:
 		interpolatedPoints = []
 		planeFormula = group['planeFormula']
 		if self.isTestingLayout :
-			stepMaxAxis = (maxValues[maxAxis] - minValues[maxAxis]) / 100.0
-			stepSecondMaxAxis = (maxValues[secondMaxAxis] - minValues[secondMaxAxis]) / 100.0
+			stepMaxAxis = (maxValues[maxAxis] - minValues[maxAxis]) / 250.0
+			stepSecondMaxAxis = (maxValues[secondMaxAxis] - minValues[secondMaxAxis]) / 250.0
 		else:
 			stepMaxAxis = 1.0
 			stepSecondMaxAxis = 1.0
