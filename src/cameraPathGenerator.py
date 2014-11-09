@@ -3,9 +3,12 @@ from __future__ import division
 import cv2
 import cv2.cv as cv
 import numpy as np
+import numpy.linalg as la
 import math
 
-class CameraPathGenerator:
+class cameraPathGenerator:
+    NUM_FRAMES = 300
+    
     def __init__(self):
         return
     
@@ -16,60 +19,58 @@ class CameraPathGenerator:
          ((position2.x, position2.y, position2.z), (orientation2.x, orientation2.y, orientation2.z)),...]
     """
     def generateCameraPath(self):
-        keyPoints = [ ((158, 5, 10), -30), 
-                      ((1316, 6, 8), 120), 
-                      ((688, 8, 5), 90), 
-                      ((940, 6, 3), 100)]
-        step = 50
-        angleMove = 10
+        keyPointsAndAngles = [((158, 5, 10), -30), 
+                              ((1316, 6, 8), 120), 
+                              ((688, 8, 5), 90), 
+                              ((940, 6, 3), 100)]
         generatedPoints = []
         
-        keyX = [int(point[0]) for (point, angle) in keyPoints]
-        keyY = [int(point[1]) for (point, angle) in keyPoints]
-        keyZ = [int(point[2]) for (point, angle) in keyPoints]
-        keyAngles= [angle for (point, angle) in keyPoints]
+        keyPoints = [point for (point, angle) in keyPointsAndAngles]
+        keyAngles= [angle for (point, angle) in keyPointsAndAngles]
+        keyX = [int(point[0]) for point in keyPoints]
+        keyY = [int(point[1]) for point in keyPoints]
+        keyZ = [int(point[2]) for point in keyPoints]
         
-        angle = keyAngles[0]
+        # Calculate step length of camera path
+        length = 0
+        for i in range(len(keyPoints) - 1):
+            length += la.norm(np.asarray(keyPoints[i+1]) - np.asarray(keyPoints[i]))
+        
+        step = length / self.NUM_FRAMES
+            
+        # Generate camera path            
         for i in range(len(keyPoints) - 1):
             x = keyX[i]
             y = keyY[i] 
             z = keyZ[i]
+            angle = keyAngles[i]
+            
+            # Calculate line slopes
+            xDifference = keyX[i+1] - keyX[i]
+            yDifference = keyY[i+1] - keyY[i]
+            zDifference = keyZ[i+1] - keyZ[i]
+            slopeZ = zDifference / xDifference
+            slopeY = (yDifference * yDifference) / (xDifference * zDifference) 
 
-            # Gradually rotate to initial angle
-            if (angle < keyAngles[i]):
-                while (angle < keyAngles[i]):
-                    angle += angleMove
-                    quatMat = self._angleToQuatMat(angle)
-                    generatedPoints.append(((x, y, z), quatMat))
+            # Calculate step for x
+            stepX = xDifference * step / la.norm(np.asarray(keyPoints[i+1]) - np.asarray(keyPoints[i]))
+            if xDifference % stepX == 0:
+                numX = int(xDifference / stepX)
             else:
-                while (angle > keyAngles[i]):
-                    angle -= angleMove
-                    quatMat = self._angleToQuatMat(angle)
-                    generatedPoints.append(((x, y, z), quatMat))
+                numX = int(xDifference / stepX) + 1 
+            
+            # Calculate angle move
+            angleMove = (keyAngles[i+1] - keyAngles[i]) / numX
             
             # Interpolate x and angle
-            signedStep = step
-            if keyX[i] > keyX[i+1]:
-                signedStep = -step
-                
-            signedAngleMove = angleMove
-            if keyAngles[i] > keyAngles[i+1]:
-                signedAngleMove = -angleMove
-            
-            dx = keyX[i+1] - keyX[i]
-            dy = keyY[i+1] - keyY[i]
-            dz = keyZ[i+1] - keyZ[i]
-            slopeZ = dz / dx
-            slopeY = dy / dx 
-            
             while x == keyX[i] or (x - keyX[i])*(x - keyX[i+1]) < 0:
                 z = int(keyZ[i] + (x - keyX[i]) * slopeZ)
-                y = int(keyY[i] + (x - keyX[i]) * slopeY)
+                y = int(keyY[i] + np.sqrt((x - keyX[i]) * (z - keyZ[i]) * slopeY))
                 quatMat = self._angleToQuatMat(angle)
                 generatedPoints.append(((x, y, z), quatMat)) 
                 
-                x += signedStep
-                angle += signedAngleMove
+                x += stepX
+                angle += angleMove
                 
         return generatedPoints
     
