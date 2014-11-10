@@ -102,7 +102,7 @@ class PerspectiveProjector:
 				isSideWallGroupMap[groupKey] = True
 				continue
 
-			isFlatRoof = (group['corners'][0][1] == group['corners'][1][1] == group['corners'][2][1] == group['corners'][3][1]) 
+			isFlatRoof = (group['corners'][0][1] == group['corners'][1][1] == group['corners'][2][1] == group['corners'][3][1] != 600)
 			if isFlatRoof :
 				isFlatRoofGroupMap[groupKey] = True
 				continue
@@ -110,9 +110,7 @@ class PerspectiveProjector:
 			tempGroupMap = {}
 			for i in range(len(finalDst)):
 				dstCoord = tuple(finalDst[i].ravel())
-				if(dstCoord[0] < 0 or dstCoord[0] >= self.IMAGE_ORIGINAL_WIDTH 
-													 or dstCoord[1] < 0 
-													 or dstCoord[1] >= self.IMAGE_ORIGINAL_HEIGHT):
+				if self.isOutOfFrame(dstCoord):
 					continue
 				srcCoord = finalSrc[i]
 				if(not dstCoord in tempGroupMap):
@@ -141,14 +139,15 @@ class PerspectiveProjector:
 			if(groupKey in isSideWallGroupMap or groupKey in isFlatRoofGroupMap):
 				for point in group['points']:
 					group['colors'][point] = image[400][400]
+
 			elif (groupKey in isBoundaryWallGroupMap): # Other Hidden Surfaces to be implemented
 				for point in group['points']:
 					if not point in group['colors']:
 						group['colors'][point] = image[400][400]
+						
 			elif (groupKey in isTentedRoofGroupMap):
 				for point in group['points']:
 					group['colors'][point] = image[575, 353]
-					print group['colors'][point]
 			else:
 				for point in group['points']:
 					if not point in group['colors']:
@@ -304,7 +303,7 @@ class PerspectiveProjector:
 																					accumulatedColor[2] + color[2])
 					tempDist[projectedPoint] = distance
 
-			if self.isTestingLayout:
+			if not self.isTestingLayout:
 				for x in xrange(minValues[0], maxValues[0] + 1, 1):
 					for y in xrange(minValues[1], maxValues[1] + 1, 1):
 						if(not (x, y) in tempColor 
