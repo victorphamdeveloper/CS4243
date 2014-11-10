@@ -175,7 +175,7 @@ class CS4243Project(QtGui.QWidget):
 	#                   MAIN LOGIC FUNCTION                   #		
 	###########################################################
 	def generateButtonClicked(self):
-		isTestingLayout = True
+		isTestingLayout = False
 		isGeneratingVideo = False
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}

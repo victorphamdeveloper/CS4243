@@ -125,7 +125,7 @@ class PerspectiveProjector:
 		for coord, group in dstGroupMap.iteritems():
 			groupKey = group['group']
 			for point in group['points']:
-				data[groupKey]['colors'][point] = image[round(coord[1])][round(coord[0])]	
+				data[groupKey]['colors'][tuple(point)] = image[round(coord[1])][round(coord[0])]	
 		
 		# Assign colors for remaining hidden points
 		for groupKey, group in data.iteritems():
