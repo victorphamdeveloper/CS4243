@@ -116,7 +116,7 @@ class PerspectiveProjector:
 									group['2Dpoints'][2][1],
 									group['2Dpoints'][3][1]])
 			# Tented roof group
-			isTentedRoof = (len(xSet) == len(ySet) == 3)
+			isTentedRoof = (len(xSet) == len(ySet) == 2) and group['direction'] == 'Upwards'
 			if isTentedRoof:
 				isTentedRoofGroupMap[groupKey] = True
 				continue	
@@ -133,7 +133,7 @@ class PerspectiveProjector:
 			isFlatRoof = (group['corners'][0][1] 	== group['corners'][1][1] 
 																						== group['corners'][2][1] 
 																						== group['corners'][3][1] 
-																						!= 600)
+																						!= 600) and group['direction'] == 'Upwards'
 			if isFlatRoof :
 				isFlatRoofGroupMap[groupKey] = True
 				continue
@@ -236,7 +236,7 @@ class PerspectiveProjector:
 		srcGroupMap = group['projectedPoints']
 		groupColors = group['colors']
 		groupColors.clear()
-		
+
 		image = cv2.imread("images/treeTexture.png", -1)
 		height = image.shape[0]
 		width = image.shape[1]
@@ -440,6 +440,8 @@ class PerspectiveProjector:
 							minValues[0] = int(projectedX)
 						if(projectedX > maxValues[0]):
 							maxValues[0] = int(projectedX)
+					else:
+						continue
 					projectedY = (self.FOCAL_LENGTH 
 												* np.dot(point - cameraPosition, orientation[1]) 
 												* self.Y_PIXEL_SCALING / den 
@@ -451,6 +453,8 @@ class PerspectiveProjector:
 							minValues[1] = int(projectedY)
 						if(projectedY > maxValues[1]):
 							maxValues[1] = int(projectedY)
+					else:
+						continue
 					projectedPoint = (int(projectedX), int(projectedY))
 					distance = la.norm(cameraPosition - point)
 					if(not projectedPoint in tempCount):
@@ -474,7 +478,15 @@ class PerspectiveProjector:
 			if not self.isTestingLayout:
 				interpolatedPoints = {}
 				for x in xrange(minValues[0], maxValues[0] + 1, 1):
+					insideFrameWidth = (-self.IMAGE_ORIGINAL_HALF_WIDTH <= x 
+															and x <= self.IMAGE_ORIGINAL_HALF_WIDTH)
+					if not insideFrameWidth:
+						continue
 					for y in xrange(minValues[1], maxValues[1] + 1, 1):
+						insideFrameHeight = (-self.IMAGE_ORIGINAL_HALF_HEIGHT <= y 
+															and y <= self.IMAGE_ORIGINAL_HALF_HEIGHT)
+						if not insideFrameHeight:
+							continue
 						if(not (x, y) in tempColor 
 								and PointsInterpolator.pointInPolygon(x, y, projectedCorners)):
 							for i in xrange(1, 11):
@@ -512,6 +524,8 @@ class PerspectiveProjector:
 			for point in tempColor:
 				color = tempColor[point]
 				count = tempCount[point]
+				if(count == 0):
+					continue
 				if(not point in result):
 					result[point] = tuple([round(x / count) for x in color])
 					zBuffer[point] = tempDist[point]
