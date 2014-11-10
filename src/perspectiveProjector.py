@@ -141,10 +141,18 @@ class PerspectiveProjector:
 					group['colors'][point] = image[400][400]
 
 			elif (groupKey in isBoundaryWallGroupMap): # Other Hidden Surfaces to be implemented
-				for point in group['points']:
-					if not point in group['colors']:
-						group['colors'][point] = image[400][400]
-						
+				zSet = set([group['corners'][0][2],group['corners'][1][2],group['corners'][2][2],group['corners'][3][2]])
+				#this is the front wall			
+				if len(zSet) == 1:
+					for point in group['points']:
+						if not point in group['colors']:
+							group['colors'][point] = image[400][400]
+				else:
+					#This is the roof
+					for point in group['points']:
+						if not point in group['colors']:
+							group['colors'][point] = image[252][770]	
+
 			elif (groupKey in isTentedRoofGroupMap):
 				for point in group['points']:
 					group['colors'][point] = image[575, 353]
