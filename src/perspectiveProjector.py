@@ -21,7 +21,9 @@ class PerspectiveProjector:
 	X_CENTER_OFFSET = Y_CENTER_OFFSET= 0
 	Y_ROTATIONAL_AXIS = np.array([0, 1, 0])
 	IMAGE_ORIGINAL_WIDTH = 800
+	IMAGE_ORIGINAL_HALF_WIDTH = IMAGE_ORIGINAL_WIDTH / 2
 	IMAGE_ORIGINAL_HEIGHT = 600
+	IMAGE_ORIGINAL_HALF_HEIGHT = IMAGE_ORIGINAL_HEIGHT / 2
 
 	def __init__(self, isTestingLayout):
 		self.FOCAL_LENGTH = 800.0 # default focal length
@@ -131,7 +133,7 @@ class PerspectiveProjector:
 		for coord, group in dstGroupMap.iteritems():
 			groupKey = group['group']
 			for point in group['points']:
-				data[groupKey]['colors'][point] = image[round(coord[1])][round(coord[0])]	
+				data[groupKey]['colors'][tuple(point)] = image[round(coord[1])][round(coord[0])]	
 		
 		# Assign colors for remaining hidden points
 		for groupKey, group in data.iteritems():
@@ -203,34 +205,92 @@ class PerspectiveProjector:
 		result  = {}
 		zBuffer = {}
 		print "Start Performing Perspective Projection..."
+		orientation = np.asarray(orientation)
 		for groupKey, group in data.iteritems():
 			pointDict = group['colors']
 			tempColor = {}
 			tempCount = {}
 			tempDist = {}
+			dens = []
+			projectedCorners = []
 			minValues = [sys.maxint, sys.maxint]
 			maxValues = [0, 0]
-			
-			for pointKey, color in pointDict.iteritems():
-				point = np.asarray(pointKey)
-				den = np.dot(point - cameraPosition, np.asarray(orientation)[2])
-				if (den > 0):
+
+			for corner in group['corners']:
+				corner = np.asarray(corner)
+				dens.append(np.dot(corner - cameraPosition, orientation[2]))
+
+			for i in range(len(group['corners'])):
+				corner = np.asarray(group['corners'][i])
+				den = dens[i]
+				if(den > 0):
 					projectedX = (self.FOCAL_LENGTH 
-												* np.dot(point - cameraPosition, np.asarray(orientation)[0]) 
+												* np.dot(corner - cameraPosition, orientation[0]) 
 												* self.X_PIXEL_SCALING / den 
 												+ self.X_CENTER_OFFSET)
-					if(projectedX < minValues[0]):
-						minValues[0] = projectedX
-					if(projectedX > maxValues[0]):
-						maxValues[0] = projectedX
 					projectedY = (self.FOCAL_LENGTH 
-												* np.dot(point - cameraPosition, np.asarray(orientation)[1]) 
+												* np.dot(corner - cameraPosition, orientation[1]) 
 												* self.Y_PIXEL_SCALING / den 
 												+ self.Y_CENTER_OFFSET)
-					if(projectedY < minValues[1]):
-						minValues[1] = projectedY
-					if(projectedY > maxValues[1]):
-						maxValues[1] = projectedY
+					projectedCorner = (int(projectedX), int(projectedY))
+					projectedCorners.append(projectedCorner)
+				else:
+					if(i > 0 and dens[i - 1] > 0):
+						den, nearestCorner = self._getNearestCorner(group['corners'][i], 
+																										group['corners'][i - 1], 
+																										cameraPosition, 
+																										orientation[2])
+						if(not nearestCorner is None):
+							projectedX = (self.FOCAL_LENGTH 
+												* np.dot(nearestCorner - cameraPosition, orientation[0]) 
+												* self.X_PIXEL_SCALING / den 
+												+ self.X_CENTER_OFFSET)
+							projectedY = (self.FOCAL_LENGTH 
+														* np.dot(nearestCorner - cameraPosition, orientation[1]) 
+														* self.Y_PIXEL_SCALING / den 
+														+ self.Y_CENTER_OFFSET)
+							projectedCorner = (int(projectedX), int(projectedY))
+							projectedCorners.append(projectedCorner)
+					if(i < len(group['corners']) - 1 and dens[i + 1] > 0):
+						den, nearestCorner = self._getNearestCorner(group['corners'][i], 
+																										group['corners'][i + 1], 
+																										cameraPosition, 
+																										orientation[2])
+						if(not nearestCorner is None):
+							projectedX = (self.FOCAL_LENGTH 
+												* np.dot(nearestCorner - cameraPosition, orientation[0]) 
+												* self.X_PIXEL_SCALING / den 
+												+ self.X_CENTER_OFFSET)
+							projectedY = (self.FOCAL_LENGTH 
+														* np.dot(nearestCorner - cameraPosition, orientation[1]) 
+														* self.Y_PIXEL_SCALING / den 
+														+ self.Y_CENTER_OFFSET)
+							projectedCorner = (int(projectedX), int(projectedY))
+							projectedCorners.append(projectedCorner)
+			if(len(projectedCorners) < len(group['corners'])):
+				continue
+			for pointKey, color in pointDict.iteritems():
+				point = np.asarray(pointKey)
+				den = np.dot(point - cameraPosition, orientation[2])
+				if (den > 0):
+					projectedX = (self.FOCAL_LENGTH 
+												* np.dot(point - cameraPosition, orientation[0]) 
+												* self.X_PIXEL_SCALING / den 
+												+ self.X_CENTER_OFFSET)
+					if(-self.IMAGE_ORIGINAL_HALF_WIDTH <= projectedX and projectedX <= self.IMAGE_ORIGINAL_HALF_WIDTH):
+						if(projectedX < minValues[0]):
+							minValues[0] = int(projectedX)
+						if(projectedX > maxValues[0]):
+							maxValues[0] = int(projectedX)
+					projectedY = (self.FOCAL_LENGTH 
+												* np.dot(point - cameraPosition, orientation[1]) 
+												* self.Y_PIXEL_SCALING / den 
+												+ self.Y_CENTER_OFFSET)
+					if(-self.IMAGE_ORIGINAL_HALF_HEIGHT <= projectedY and projectedY <= self.IMAGE_ORIGINAL_HALF_HEIGHT):
+						if(projectedY < minValues[1]):
+							minValues[1] = int(projectedY)
+						if(projectedY > maxValues[1]):
+							maxValues[1] = int(projectedY)
 					projectedPoint = (int(projectedX), int(projectedY))
 					distance = la.norm(cameraPosition - point)
 					if(not projectedPoint in tempCount):
@@ -244,45 +304,38 @@ class PerspectiveProjector:
 																					accumulatedColor[2] + color[2])
 					tempDist[projectedPoint] = distance
 
-			if not self.isTestingLayout:
+			if self.isTestingLayout:
 				for x in xrange(minValues[0], maxValues[0] + 1, 1):
 					for y in xrange(minValues[1], maxValues[1] + 1, 1):
-						if(not (x, y) in tempColor):
-							count = 0
-							for i in xrange(1, 7):
-								if((x + i, y) in tempColor): count += 1
-								if((x - i, y) in tempColor): count += 1
-								if((x, y + i) in tempColor): count += 1
-								if((x, y - i) in tempColor): count += 1
+						if(not (x, y) in tempColor 
+								and PointsInterpolator.pointInPolygon(x, y, projectedCorners)):
+							for i in xrange(1, 31):
+								points = []
+								for m in xrange(-i, i + 1, 1):
+									for n in xrange(-i, i + 1, 1):
+										if(np.abs(m) != i and np.abs(n) != i):
+											continue
+										point = (x + m, y + n)
+										if point in tempColor:
+											count = tempCount[point]
+											if(count > 1):
+												color = tempColor[point]
+												tempColor[point] = tuple([round(u / count) for u in color])
+												tempCount[point] = 1
+											points.append(point)
+								if(len(points) != 0):
+									counter = [0, 0, 0, 0, 0]
+									for point in points:
+										counter[0] += tempColor[point][0]
+										counter[1] += tempColor[point][1]
+										counter[2] += tempColor[point][2]
+										counter[3] += tempDist[point]
+										counter[4] += tempCount[point]
+									tempColor[(x, y)] = (counter[0], counter[1], counter[2])
+									tempCount[(x, y)] = counter[4]
+									tempDist[(x, y)] = counter[3] / counter[4]
+									break 
 
-							if(count > 2):
-								for i in xrange(1, 7):
-									points = []
-									for m in xrange(-i, i + 1, 1):
-										for n in xrange(-i, i + 1, 1):
-											if(np.abs(m) != i and np.abs(n) != i):
-												continue
-											point = (x + m, y + n)
-											if point in tempColor:
-												count = tempCount[point]
-												if(count > 1):
-													color = tempColor[point]
-													tempColor[point] = tuple([round(u / count) for u in color])
-													tempCount[point] = 1
-												points.append(point)
-									if(len(points) != 0):
-										counter = [0, 0, 0, 0, 0]
-										for point in points:
-											counter[0] += tempColor[point][0]
-											counter[1] += tempColor[point][1]
-											counter[2] += tempColor[point][2]
-											counter[3] += tempDist[point]
-											counter[4] += tempCount[point]
-										tempColor[(x, y)] = (counter[0], counter[1], counter[2])
-										tempCount[(x, y)] = counter[4]
-										tempDist[(x, y)] = counter[3] / counter[4]
-										break 
-			
 			for point in tempColor:
 				color = tempColor[point]
 				count = tempCount[point]
@@ -348,3 +401,18 @@ class PerspectiveProjector:
 		out[2][2] = np.power(q0, 2) + np.power(q3, 2) - np.power(q1, 2) - np.power(q2, 2)
 
 		return np.matrix(out)
+
+	# Function to retrieve the nearest corner to the camera but not behind it
+	def _getNearestCorner(self, srcCorner, dstCorner, cameraPos, orientation):
+		srcCorner = np.asarray(srcCorner)
+		dstCorner = np.asarray(dstCorner)
+		distance = int(la.norm(srcCorner - dstCorner))
+		step = 1.0 / distance
+		for i in range(distance):
+			ratio = step * i
+			point = (1 - ratio) * srcCorner + ratio * dstCorner
+			den = np.dot(point - cameraPos, orientation)
+			if(den > 0):
+				return (den, point)
+
+		return (None, None)

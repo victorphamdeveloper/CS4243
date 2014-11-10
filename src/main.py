@@ -175,8 +175,8 @@ class CS4243Project(QtGui.QWidget):
 	#                   MAIN LOGIC FUNCTION                   #		
 	###########################################################
 	def generateButtonClicked(self):
-		isTestingLayout = True
-		isGeneratingVideo = True
+		isTestingLayout = False
+		isGeneratingVideo = False
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
 		
@@ -232,7 +232,7 @@ class CS4243Project(QtGui.QWidget):
 			start = current_milli_time()
 			cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
 												self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
-												0] 
+												600] 
 			if(not isTestingLayout):
 				results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
 																													cameraPosition, 
