@@ -1,9 +1,11 @@
+# System Dependence
 import json
 from pprint import pprint
 import codecs
 
-#This class is used for generating test data instead of
-#having to create data through the interface repeatedly
+###########################################################
+#                   Data Generator                        #
+###########################################################
 class DataGenerator:
 	def __init__(self):
 		return

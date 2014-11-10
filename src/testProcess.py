@@ -1,12 +1,20 @@
+# System Dependence
+import copy
+import time
+
+# External Dependence
+import cv2
+import cv2.cv as cv
+import numpy as np
+
+# Class Dependence
 from pointsInterpolator import *
 from perspectiveProjector import *
 from dataGenerator import *
 
-import copy
-import cv2
-import cv2.cv as cv
-import numpy as np
-import time
+###########################################################
+#                   Testing Script                        #
+###########################################################
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 

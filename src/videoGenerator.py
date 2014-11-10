@@ -1,11 +1,13 @@
-import sys
+# System Dependence
+from sys import platform as _platform
+
+# External Dependence
 import cv2.cv as cv
 import cv2
-import numpy as np
-import numpy.linalg as la
-import copy
 
-# This class is used for generating video
+###########################################################
+#                   Video Generator                       #
+###########################################################
 class VideoGenerator:
     NUM_FRAMES_PER_SECONDS = 25
     FRAME_WIDTH = 800
@@ -15,15 +17,21 @@ class VideoGenerator:
         print "Initialize Video Generator Process"
         return
 
-    def generateVideo(frames):
+    def generateVideo(self, frames):
         # Initialize Video Writer
-        videoWriter = cv2.VideoWriter("FlyThroughResult.avi", -1, 
+        if _platform == "linux" or _platform == "linux2":
+            fourcc = cv.CV_FOURCC('m', 'p', '4', 'v')
+        elif _platform == "darwin":
+            fourcc = cv.CV_FOURCC('m', 'p', '4', 'v')
+        elif _platform == "win32":
+            fourcc = -1
+
+        videoWriter = cv2.VideoWriter("FlyThroughResult.avi", fourcc, 
                                 self.NUM_FRAMES_PER_SECONDS, 
                                 (self.FRAME_WIDTH, self.FRAME_HEIGHT))
-
-        #read through 0.jpg to total.jpg
         for imageFrame in frames:
             videoWriter.write(imageFrame)
-
-        cv2.destroyAllWindows()
         videoWriter.release()
+        videoWriter = None
+        print "Finish Generating Video !!!"
+        return
