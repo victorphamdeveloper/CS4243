@@ -41,7 +41,7 @@ class PerspectiveProjector:
 		isSideWallGroupMap = {}
 		isFlatRoofGroupMap = {}
 		isBoundaryWallGroupMap = {}
-
+		isTentedRoofGroupMap = {}
 		for groupKey, group in data.iteritems():
 			group['colors'] = {}
 			# Projection
@@ -82,6 +82,14 @@ class PerspectiveProjector:
 			isBoundaryWall = self.isOutOfFrame(group['2Dpoints'][0]) or self.isOutOfFrame(group['2Dpoints'][1]) or self.isOutOfFrame(group['2Dpoints'][2]) or self.isOutOfFrame(group['2Dpoints'][3])
 			if isBoundaryWall:
 				isBoundaryWallGroupMap[groupKey] = True
+
+			xSet = set([group['2Dpoints'][0][0],group['2Dpoints'][1][0],group['2Dpoints'][2][0],group['2Dpoints'][3][0]])
+			ySet = set([group['2Dpoints'][0][1],group['2Dpoints'][1][1],group['2Dpoints'][2][1],group['2Dpoints'][3][1]])
+
+			isTentedRoof = (len(xSet) == len(ySet) == 2)
+			if isTentedRoof:
+				isTentedRoofGroupMap[groupKey] = True
+				continue
 
 			isSideWall = (group['2Dpoints'][0][0] == group['2Dpoints'][1][0] == group['2Dpoints'][2][0] == group['2Dpoints'][3][0])
 			if isSideWall :
@@ -134,6 +142,10 @@ class PerspectiveProjector:
 				for point in group['points']:
 					if not point in group['colors']:
 						group['colors'][point] = image[400][400]
+			elif (groupKey in isTentedRoofGroupMap):
+				for point in group['points']:
+					group['colors'][point] = image[575, 353]
+					print group['colors'][point]
 			else:
 				for point in group['points']:
 					if not point in group['colors']:
