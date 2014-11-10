@@ -232,7 +232,7 @@ class CS4243Project(QtGui.QWidget):
 			start = current_milli_time()
 			cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
 												self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
-												600] 
+												0] 
 			if(not isTestingLayout):
 				results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
 																													cameraPosition, 
@@ -271,7 +271,7 @@ class CS4243Project(QtGui.QWidget):
 			generatedPath = pathGenerator.generateCameraPath()
 			generatedFrames = []
 			for point in generatedPath:
-				results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
+				results = perspectiveProjector.performPerspective(copy.copy(interpolatedData), 
 																													point[0], 
 																													point[1])
 				imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
