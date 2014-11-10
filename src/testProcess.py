@@ -1,12 +1,20 @@
+# System Dependence
+import copy
+import time
+
+# External Dependence
+import cv2
+import cv2.cv as cv
+import numpy as np
+
+# Class Dependence
 from pointsInterpolator import *
 from perspectiveProjector import *
 from dataGenerator import *
 
-import copy
-import cv2
-import cv2.cv as cv
-import numpy as np
-import time
+###########################################################
+#                   Testing Script                        #
+###########################################################
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
@@ -15,7 +23,7 @@ IMAGE_ORIGINAL_HEIGHT = 600
 
 # Retrieve data
 dataGenerator = DataGenerator()
-groupsData = dataGenerator.loadDataFromFile("allData.json")
+groupsData = dataGenerator.loadDataFromFile("data/allData.json")
 
 # Interpolate data
 start = current_milli_time()
