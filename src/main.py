@@ -175,7 +175,7 @@ class CS4243Project(QtGui.QWidget):
 	#                   MAIN LOGIC FUNCTION                   #		
 	###########################################################
 	def generateButtonClicked(self):
-		isTestingLayout = True
+		isTestingLayout = False
 		isGeneratingVideo = False
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
@@ -230,17 +230,18 @@ class CS4243Project(QtGui.QWidget):
 			# 			PERSPECTIVE PROJECTION      	 #		
 			########################################
 			start = current_milli_time()
-			cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
+			cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 2 / 3.0, 
 												self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
 												0] 
 			if(not isTestingLayout):
-				results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
+				results = perspectiveProjector.performPerspective(copy.copy(interpolatedData), 
 																													cameraPosition, 
 																													orientation )
 			else:
-				results = perspectiveProjector.performPerspectiveWithYRotatedAngle(copy.deepcopy(interpolatedData), 
-																													cameraPosition, 
-																													0)
+				results = perspectiveProjector.performPerspectiveWithYRotatedAngle(
+																												copy.copy(interpolatedData), 
+																												cameraPosition, 
+																												0)
 			print 'Time taken for perspective projection: ', (current_milli_time() - start), 'ms'
 			
 			########################################
@@ -271,7 +272,7 @@ class CS4243Project(QtGui.QWidget):
 			generatedPath = pathGenerator.generateCameraPath()
 			generatedFrames = []
 			for point in generatedPath:
-				results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
+				results = perspectiveProjector.performPerspective(copy.copy(interpolatedData), 
 																													point[0], 
 																													point[1])
 				imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
