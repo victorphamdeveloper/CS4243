@@ -230,17 +230,18 @@ class CS4243Project(QtGui.QWidget):
 			# 			PERSPECTIVE PROJECTION      	 #		
 			########################################
 			start = current_milli_time()
-			cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
+			cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 2 / 3.0, 
 												self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
 												0] 
 			if(not isTestingLayout):
-				results = perspectiveProjector.performPerspective(copy.deepcopy(interpolatedData), 
+				results = perspectiveProjector.performPerspective(copy.copy(interpolatedData), 
 																													cameraPosition, 
 																													orientation )
 			else:
-				results = perspectiveProjector.performPerspectiveWithYRotatedAngle(copy.deepcopy(interpolatedData), 
-																													cameraPosition, 
-																													0)
+				results = perspectiveProjector.performPerspectiveWithYRotatedAngle(
+																												copy.copy(interpolatedData), 
+																												cameraPosition, 
+																												0)
 			print 'Time taken for perspective projection: ', (current_milli_time() - start), 'ms'
 			
 			########################################
