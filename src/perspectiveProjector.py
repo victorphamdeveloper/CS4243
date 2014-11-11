@@ -49,10 +49,9 @@ class PerspectiveProjector:
 		width = image.shape[1]
 		height = image.shape[0]
 		dstGroupMap = {}
-		isSideWallGroupMap = {}
-		isFlatRoofGroupMap = {}
+		isHiddenSideWallGroupMap = {}
+		isHiddenFlatRoofGroupMap = {}
 		isBoundaryWallGroupMap = {}
-		isTentedRoofGroupMap = {}
 
 		###################################################
 		# 	Map points between 3D space and 2D Projection #
@@ -107,35 +106,25 @@ class PerspectiveProjector:
 			if isBoundaryWall:
 				isBoundaryWallGroupMap[groupKey] = True
 
-			xSet = set([group['2Dpoints'][0][0],
-									group['2Dpoints'][1][0],
-									group['2Dpoints'][2][0],
-									group['2Dpoints'][3][0]])
-			ySet = set([group['2Dpoints'][0][1],
-									group['2Dpoints'][1][1],
-									group['2Dpoints'][2][1],
-									group['2Dpoints'][3][1]])
-			# Tented roof group
-			isTentedRoof = (len(xSet) == len(ySet) == 2) and group['direction'] == 'Upwards'
-			if isTentedRoof:
-				isTentedRoofGroupMap[groupKey] = True
-				continue	
-
 			# Sidewall group
-			isSideWall = (group['2Dpoints'][0][0] == group['2Dpoints'][1][0] 
+			isHiddenSideWall = (group['2Dpoints'][0][0] == group['2Dpoints'][1][0] 
 																						== group['2Dpoints'][2][0] 
 																						== group['2Dpoints'][3][0])
-			if isSideWall :
-				isSideWallGroupMap[groupKey] = True
+			if isHiddenSideWall :
+				isHiddenSideWallGroupMap[groupKey] = True
 				continue
 
 			# Flat roof group
-			isFlatRoof = (group['corners'][0][1] 	== group['corners'][1][1] 
+			isHiddenFlatRoof = (group['corners'][0][1] 	== group['corners'][1][1] 
 																						== group['corners'][2][1] 
 																						== group['corners'][3][1] 
 																						!= 600) and group['direction'] == 'Upwards'
-			if isFlatRoof :
-				isFlatRoofGroupMap[groupKey] = True
+			if isHiddenFlatRoof :
+				isHiddenFlatRoofGroupMap[groupKey] = True
+				continue
+
+			pointSet = set(group['2Dpoints'])
+			if(len(pointSet) < len(group['2Dpoints'])):
 				continue
 
 			###################################################
@@ -176,27 +165,22 @@ class PerspectiveProjector:
 		#########################################################################
 		for groupKey, group in data.iteritems():
 			# Side wall or Flat roof
-			if(groupKey in isSideWallGroupMap or groupKey in isFlatRoofGroupMap):
+			if(groupKey in isHiddenSideWallGroupMap or groupKey in isHiddenFlatRoofGroupMap):
 				for point in group['points']:
 					group['colors'][point] = image[400][400]
 
 			elif (groupKey in isBoundaryWallGroupMap): # Other Hidden Surfaces to be implemented
-				zSet = set([group['corners'][0][2],group['corners'][1][2],group['corners'][2][2],group['corners'][3][2]])
-				#this is the front wall			
-				if len(zSet) == 1:
-					for point in group['points']:
-						if not point in group['colors']:
-							group['colors'][point] = image[400][400]
-				else:
-					#This is the roof
-					for point in group['points']:
-						if not point in group['colors']:
-							group['colors'][point] = image[252][770]	
-
-			elif (groupKey in isTentedRoofGroupMap):
-				for point in group['points']:
-					group['colors'][point] = image[575, 353]
-
+				if self.checkIfHiddenSurfaceNeedExternalTexture(group):
+					self.importExternalTexture(group)
+				else:	
+					if group['direction'] != 'Upwards':
+						for point in group['points']:
+							if not point in group['colors']:
+								group['colors'][point] = image[400][400]
+					else:
+						for point in group['points']:
+							if not point in group['colors']:
+								group['colors'][point] = image[252][770]	
 			else:
 				isGround = self.checkIfGround(group)
 				if isGround :
@@ -210,9 +194,17 @@ class PerspectiveProjector:
 					self.handleTree(group)
 					continue
 
-				for point in group['points']:
-					if not point in group['colors']:
-						group['colors'][point] = image[400][400]
+				if self.checkIfHiddenSurfaceNeedExternalTexture(group):
+					self.importExternalTexture(group)
+				else:	
+					if group['direction'] != 'Upwards':
+						for point in group['points']:
+							if not point in group['colors']:
+								group['colors'][point] = image[400][400]
+					else:
+						for point in group['points']:
+							if not point in group['colors']:
+								group['colors'][point] = image[252][770]	
 
 		# Release data
 		for key, group in data.iteritems():
@@ -221,6 +213,45 @@ class PerspectiveProjector:
 			group.pop('projectedPoints', None)
 
 		print "Finish filling color"
+		return
+
+	def checkIfHiddenSurfaceNeedExternalTexture(self, group):
+		numPoints = len(group['points'])
+		numUnpaintedPoints = 0
+		for point in group['points']:
+			if not point in group['colors']:
+				numUnpaintedPoints += 1
+		if(float(numUnpaintedPoints) / numPoints > 0.1):
+			return True
+		return False
+
+	def importExternalTexture(self, group):
+		projectedCorners = group['projectedCorners']
+		srcGroupMap = group['projectedPoints']
+		groupColors = group['colors']
+		groupColors.clear()
+		
+		if(group['direction'] == 'Upwards'):
+			image = cv2.imread("images/roofTexture.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+		else:
+			image = cv2.imread("images/wallTexture.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+		height = image.shape[0]
+		width = image.shape[1]
+
+		src = self.verticalReshape(projectedCorners)
+		dst = self.verticalReshape([(0, 0), (width, 0), (width, height), (0, height)])
+		transformationMatrix, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
+		finalSrc = srcGroupMap.keys()
+		finalDst = np.int32(cv2.perspectiveTransform(self.verticalReshape(finalSrc), 
+																									transformationMatrix))
+		for i in range(len(finalDst)):
+				dstCoord = tuple(finalDst[i].ravel())
+				if self.isOutOfFrame(dstCoord, width, height):
+					continue
+				srcCoord = finalSrc[i]
+				for point in srcGroupMap[srcCoord]:
+					groupColors[tuple(point)] = image[dstCoord[1]][dstCoord[0]]
+
 		return
 
 	def checkIfTree(self, group):
@@ -283,6 +314,7 @@ class PerspectiveProjector:
 		projectedCorners = group['projectedCorners']
 		srcGroupMap = group['projectedPoints']
 		groupColors = group['colors']
+		groupColors.clear()
 
 		image = cv2.imread("images/groundTexture.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 		height = image.shape[0]
