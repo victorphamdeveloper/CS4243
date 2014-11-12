@@ -127,7 +127,8 @@ class CS4243Project(QtGui.QWidget):
 	def initImage(self):
 		labelImage = QtGui.QLabel()
    		imagePixmap = QtGui.QPixmap('images/project.jpg')
-   		imagePixmap = imagePixmap.scaledToHeight(self.IMAGE_ORIGINAL_HEIGHT, QtCore.Qt.SmoothTransformation)
+   		imagePixmap = imagePixmap.scaledToHeight(self.IMAGE_ORIGINAL_HEIGHT, 
+   																						QtCore.Qt.SmoothTransformation)
    		labelImage.setPixmap(imagePixmap)
    		labelImage.setFixedSize(imagePixmap.size())
 
@@ -176,7 +177,7 @@ class CS4243Project(QtGui.QWidget):
 	###########################################################
 	def generateButtonClicked(self):
 		isTestingLayout = True
-		isGeneratingVideo = True
+		isGeneratingVideo = False
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
 		
@@ -230,7 +231,7 @@ class CS4243Project(QtGui.QWidget):
 			# 			PERSPECTIVE PROJECTION      	 #		
 			########################################
 			start = current_milli_time()
-			cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 2 / 3.0, 
+			cameraPosition = [self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
 												self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
 												0] 
 			if(not isTestingLayout):
@@ -254,7 +255,9 @@ class CS4243Project(QtGui.QWidget):
 			for point, color in results.iteritems():
 				x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
 				y = int(point[1] + self.IMAGE_ORIGINAL_HEIGHT / 2.0)
-				if(0 <= x and x < self.IMAGE_ORIGINAL_WIDTH and 0 <= y and y < self.IMAGE_ORIGINAL_HEIGHT):
+				if(0 <= x and x < self.IMAGE_ORIGINAL_WIDTH 
+									and 0 <= y 
+									and y < self.IMAGE_ORIGINAL_HEIGHT):
 					imageFrame[y][x] = [color[0], color[1], color[2]]
 		
 			winname = "imageWin"
@@ -271,7 +274,6 @@ class CS4243Project(QtGui.QWidget):
 			pathGenerator = CameraPathGenerator()
 			generatedPath = pathGenerator.generateCameraPath()
 			generatedFrames = []
-			index = 1
 			for point in generatedPath:
 				results = perspectiveProjector.performPerspective(copy.copy(interpolatedData), 
 																													point[0], 
@@ -286,8 +288,6 @@ class CS4243Project(QtGui.QWidget):
 					if(0 <= x and x < self.IMAGE_ORIGINAL_WIDTH and 0 <= y and y < self.IMAGE_ORIGINAL_HEIGHT):
 						imageFrame[y][x] = [color[0], color[1], color[2]]
 				generatedFrames.append(imageFrame)
-				print "Finish generating frame ", index
-				index += 1
 			videoGenerator.generateVideo(generatedFrames)
 
 		return
