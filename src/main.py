@@ -176,8 +176,8 @@ class CS4243Project(QtGui.QWidget):
 	#                   MAIN LOGIC FUNCTION                   #		
 	###########################################################
 	def generateButtonClicked(self):
-		isTestingLayout = True
-		isGeneratingVideo = True
+		isTestingLayout = False
+		isGeneratingVideo = False
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
 		
@@ -248,9 +248,7 @@ class CS4243Project(QtGui.QWidget):
 			########################################
 			#							FRAME DISPLAY      	 		 #		
 			########################################
-			imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
-															 	int(self.IMAGE_ORIGINAL_WIDTH),3), 
-																np.uint8)
+			imageFrame = cv2.imread('images/bg.jpg')
 			imageFrame = cv2.resize(imageFrame, (800, 600))
 			for point, color in results.iteritems():
 				x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
@@ -266,6 +264,7 @@ class CS4243Project(QtGui.QWidget):
 			cv2.imshow('imageWin', imageFrame)
 			cv2.waitKey(0)
 			cv2.destroyAllWindows()
+			cv2.imwrite('result.jpg', imageFrame)
 		else:
 			########################################
 			# 					VIDEO GENERATOR      	 		 #			
@@ -279,9 +278,7 @@ class CS4243Project(QtGui.QWidget):
 				results = perspectiveProjector.performPerspective(copy.copy(interpolatedData), 
 																													point[0], 
 																													point[1])
-				imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
-															 	int(self.IMAGE_ORIGINAL_WIDTH),3), 
-																np.uint8)
+				imageFrame = cv2.imread('images/bg.jpg')
 				imageFrame = cv2.resize(imageFrame, (800, 600))
 				for point, color in results.iteritems():
 					x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
