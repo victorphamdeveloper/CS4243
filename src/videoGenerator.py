@@ -9,7 +9,7 @@ import cv2
 #                   Video Generator                       #
 ###########################################################
 class VideoGenerator:
-    NUM_FRAMES_PER_SECONDS = 25
+    NUM_FRAMES_PER_SECONDS = 5
     FRAME_WIDTH = 800
     FRAME_HEIGHT = 600
 
