@@ -175,8 +175,8 @@ class CS4243Project(QtGui.QWidget):
 	#                   MAIN LOGIC FUNCTION                   #		
 	###########################################################
 	def generateButtonClicked(self):
-		isTestingLayout = False
-		isGeneratingVideo = False
+		isTestingLayout = True
+		isGeneratingVideo = True
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
 		
@@ -271,6 +271,7 @@ class CS4243Project(QtGui.QWidget):
 			pathGenerator = CameraPathGenerator()
 			generatedPath = pathGenerator.generateCameraPath()
 			generatedFrames = []
+			index = 1
 			for point in generatedPath:
 				results = perspectiveProjector.performPerspective(copy.copy(interpolatedData), 
 																													point[0], 
@@ -285,6 +286,8 @@ class CS4243Project(QtGui.QWidget):
 					if(0 <= x and x < self.IMAGE_ORIGINAL_WIDTH and 0 <= y and y < self.IMAGE_ORIGINAL_HEIGHT):
 						imageFrame[y][x] = [color[0], color[1], color[2]]
 				generatedFrames.append(imageFrame)
+				print "Finish generating frame ", index
+				index += 1
 			videoGenerator.generateVideo(generatedFrames)
 
 		return

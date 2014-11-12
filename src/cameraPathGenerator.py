@@ -12,7 +12,7 @@ import numpy.linalg as la
 #                   Camera Path Generator                 #
 ###########################################################
 class CameraPathGenerator:
-    NUM_FRAMES = 300
+    NUM_FRAMES = 50
     IMAGE_ORIGINAL_WIDTH = 800
     IMAGE_ORIGINAL_HEIGHT = 600
 
@@ -29,15 +29,15 @@ class CameraPathGenerator:
         point1 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
                    self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
                    0), 0)
-        point2 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
+        point2 = ((self.IMAGE_ORIGINAL_WIDTH * 3 / 5.0, 
                    self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
-                   300), 0)
+                   200), np.pi / 16.0)
         point3 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
                    self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
-                   600), 0)
-        point4 = ((self.IMAGE_ORIGINAL_WIDTH * 1 / 2.0, 
+                   400), 0)
+        point4 = ((self.IMAGE_ORIGINAL_WIDTH * 2 / 5.0, 
                    self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
-                   900), 0)
+                   600), -np.pi / 8.0)
         keyPointsAndAngles = [point1, point2, point3, point4]
         generatedPoints = []
         
