@@ -176,7 +176,7 @@ class CS4243Project(QtGui.QWidget):
 	##########################################################
 	def generateButtonClicked(self):
 		isTestingLayout = False
-		isGeneratingVideo = False
+		isGeneratingVideo = True
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
 		
@@ -278,7 +278,7 @@ class CS4243Project(QtGui.QWidget):
 				results = perspectiveProjector.performPerspective(copy.copy(interpolatedData), 
 																													point[0], 
 																													point[1])
-				imageFrame = cv2.imread('images/bg.jpg')
+				imageFrame = cv2.imread('images/skyTexture.jpg')
 				imageFrame = cv2.resize(imageFrame, (800, 600))
 				for point, color in results.iteritems():
 					x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)

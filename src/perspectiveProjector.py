@@ -346,30 +346,6 @@ class PerspectiveProjector:
 
 		return
 
-	def handleSky(self, group):
-		srcGroupMap = []
-		for i in xrange(-self.IMAGE_ORIGINAL_WIDTH/2,self.IMAGE_ORIGINAL_WIDTH/2,1):
-			for j in range(-self.IMAGE_ORIGINAL_HEIGHT/2,self.IMAGE_ORIGINAL_HEIGHT/2,1):
-				srcGroupMap.append((i,j))
-
-		image = cv2.imread("images/bg.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-		height = image.shape[0]
-		width = image.shape[1]
-
-		src = self.verticalReshape([(-400, 300), (400, 300), (400, -300), (-400, -300)])
-		dst = self.verticalReshape([(0, 0), (width, 0), (width, height), (0, height)])
-		transformationMatrix, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
-		finalSrc = srcGroupMap
-		finalDst = np.int32(cv2.perspectiveTransform(self.verticalReshape(finalSrc), 
-																									transformationMatrix))
-		for i in range(len(finalDst)):
-				dstCoord = tuple(finalDst[i].ravel())
-				if self.isOutOfFrame(dstCoord, width, height):
-					continue
-				srcCoord = finalSrc[i]
-				group[srcCoord] = image[dstCoord[1]][dstCoord[0]]
-		return 
-
 	def isOutOfFrame(self, point, width  = 800, 
 																height = 600):
 		return (point[0] < 0 	or point[0] >= width 
@@ -422,7 +398,6 @@ class PerspectiveProjector:
 		result  = {}
 		zBuffer = {}
 		print "Start Performing Perspective Projection..."
-		self.handleSky(result)
 		orientation = np.asarray(orientation)
 		################################
 		#	 	Projection for each group  #
