@@ -18,7 +18,7 @@ import cv2.cv as cv
 import numpy as np
 
 ###########################################################
-#                   Main Executable                       #
+#                   Main Executable  		                  #
 ###########################################################
 class CS4243Project(QtGui.QWidget):
 	# Constant Declaration
@@ -126,19 +126,19 @@ class CS4243Project(QtGui.QWidget):
 
 	def initImage(self):
 		labelImage = QtGui.QLabel()
-   		imagePixmap = QtGui.QPixmap('images/project.jpg')
-   		imagePixmap = imagePixmap.scaledToHeight(self.IMAGE_ORIGINAL_HEIGHT, 
-   																						QtCore.Qt.SmoothTransformation)
-   		labelImage.setPixmap(imagePixmap)
-   		labelImage.setFixedSize(imagePixmap.size())
+ 		imagePixmap = QtGui.QPixmap('images/project.jpg')
+ 		imagePixmap = imagePixmap.scaledToHeight(self.IMAGE_ORIGINAL_HEIGHT, 
+ 																						QtCore.Qt.SmoothTransformation)
+ 		labelImage.setPixmap(imagePixmap)
+ 		labelImage.setFixedSize(imagePixmap.size())
 
-   		# Assign values
-   		self.imageSize = QtCore.QSize(int(imagePixmap.size().width()), 
-   																	int(imagePixmap.size().height()))
-   		self.sideBarSize = QtCore.QSize(self.screenSize.width() - self.imageSize.width(), 
-   																		self.screenSize.height())
-   		self.image = labelImage
-   		return
+ 		# Assign values
+ 		self.imageSize = QtCore.QSize(int(imagePixmap.size().width()), 
+ 																	int(imagePixmap.size().height()))
+ 		self.sideBarSize = QtCore.QSize(self.screenSize.width() - self.imageSize.width(), 
+ 																		self.screenSize.height())
+ 		self.image = labelImage
+ 		return
 
 	def initSideBar(self):
 		vbox = QtGui.QVBoxLayout()
@@ -158,7 +158,6 @@ class CS4243Project(QtGui.QWidget):
 		hbox.addWidget(addButton)
 		vbox.addLayout(hbox)
 
-
 		# Group Info
 		groupInfo = QtGui.QVBoxLayout()
 		groupInfo.setSpacing(10.0)
@@ -174,10 +173,10 @@ class CS4243Project(QtGui.QWidget):
 
 	###########################################################
 	#                   MAIN LOGIC FUNCTION                   #		
-	###########################################################
+	##########################################################
 	def generateButtonClicked(self):
 		isTestingLayout = False
-		isGeneratingVideo = False
+		isGeneratingVideo = True
 		current_milli_time = lambda: int(round(time.time() * 1000))
 		groupsData = {}
 		
@@ -248,9 +247,8 @@ class CS4243Project(QtGui.QWidget):
 			########################################
 			#							FRAME DISPLAY      	 		 #		
 			########################################
-			imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
-															 	int(self.IMAGE_ORIGINAL_WIDTH),3), 
-																np.uint8)
+			imageFrame = cv2.imread('images/skyTexture.jpg')
+			imageFrame = np.zeros((int(self.IMAGE_ORIGINAL_HEIGHT),int(self.IMAGE_ORIGINAL_WIDTH),3), np.uint8)
 			imageFrame = cv2.resize(imageFrame, (800, 600))
 			for point, color in results.iteritems():
 				x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
@@ -266,6 +264,7 @@ class CS4243Project(QtGui.QWidget):
 			cv2.imshow('imageWin', imageFrame)
 			cv2.waitKey(0)
 			cv2.destroyAllWindows()
+			cv2.imwrite('result.jpg', imageFrame)
 		else:
 			########################################
 			# 					VIDEO GENERATOR      	 		 #			
@@ -274,13 +273,12 @@ class CS4243Project(QtGui.QWidget):
 			pathGenerator = CameraPathGenerator()
 			generatedPath = pathGenerator.generateCameraPath()
 			generatedFrames = []
+			index = 1
 			for point in generatedPath:
 				results = perspectiveProjector.performPerspective(copy.copy(interpolatedData), 
 																													point[0], 
 																													point[1])
-				imageFrame = np.zeros((	int(self.IMAGE_ORIGINAL_HEIGHT),
-															 	int(self.IMAGE_ORIGINAL_WIDTH),3), 
-																np.uint8)
+				imageFrame = cv2.imread('images/skyTexture.jpg')
 				imageFrame = cv2.resize(imageFrame, (800, 600))
 				for point, color in results.iteritems():
 					x = int(point[0] + self.IMAGE_ORIGINAL_WIDTH  / 2.0)
@@ -288,6 +286,9 @@ class CS4243Project(QtGui.QWidget):
 					if(0 <= x and x < self.IMAGE_ORIGINAL_WIDTH and 0 <= y and y < self.IMAGE_ORIGINAL_HEIGHT):
 						imageFrame[y][x] = [color[0], color[1], color[2]]
 				generatedFrames.append(imageFrame)
+				print "Successfully generate frame ", index
+				index += 1
+			print "Please choose your preferences of codec (if necessary) :)"
 			videoGenerator.generateVideo(generatedFrames)
 
 		return

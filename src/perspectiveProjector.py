@@ -51,6 +51,7 @@ class PerspectiveProjector:
 		dstGroupMap = {}
 		isHiddenSideWallGroupMap = {}
 		isHiddenFlatRoofGroupMap = {}
+		isHiddenTitltedRoofGroupMap = {}
 		isBoundaryWallGroupMap = {}
 
 		###################################################
@@ -98,6 +99,11 @@ class PerspectiveProjector:
 																									self.verticalReshape(finalSrc), 
 																									transformationMatrix))
 
+			# Ground group
+			isGround = self.checkIfGround(group)
+			if isGround:
+				continue
+
 			# Out of bounds group
 			isBoundaryWall = (self.isOutOfFrame(group['2Dpoints'][0])
 											 or self.isOutOfFrame(group['2Dpoints'][1]) 
@@ -114,13 +120,19 @@ class PerspectiveProjector:
 				isHiddenSideWallGroupMap[groupKey] = True
 				continue
 
-			# Flat roof group
-			isHiddenFlatRoof = (group['corners'][0][1] 	== group['corners'][1][1] 
-																						== group['corners'][2][1] 
-																						== group['corners'][3][1] 
-																						!= 600) and group['direction'] == 'Upwards'
+			# Roof group
+			isHiddenFlatRoof = ((	group['corners'][0][1] == group['corners'][1][1] 
+																									== group['corners'][2][1] 
+																									== group['corners'][3][1] 
+													) and group['direction'] == 'Upwards')
+
 			if isHiddenFlatRoof :
 				isHiddenFlatRoofGroupMap[groupKey] = True
+				continue
+
+			isHiddenTiltedRoof = group['direction'] == 'Upwards'
+			if isHiddenTiltedRoof :
+				isHiddenTitltedRoofGroupMap[groupKey] = True
 				continue
 
 			pointSet = set(group['2Dpoints'])
@@ -166,21 +178,11 @@ class PerspectiveProjector:
 		for groupKey, group in data.iteritems():
 			# Side wall or Flat roof
 			if(groupKey in isHiddenSideWallGroupMap or groupKey in isHiddenFlatRoofGroupMap):
-				for point in group['points']:
-					group['colors'][point] = image[400][400]
-
+				self.importExternalTextureFromImage(group, "images/wallTexture.jpg")
 			elif (groupKey in isBoundaryWallGroupMap): # Other Hidden Surfaces to be implemented
-				if self.checkIfHiddenSurfaceNeedExternalTexture(group):
-					self.importExternalTexture(group)
-				else:	
-					if group['direction'] != 'Upwards':
-						for point in group['points']:
-							if not point in group['colors']:
-								group['colors'][point] = image[400][400]
-					else:
-						for point in group['points']:
-							if not point in group['colors']:
-								group['colors'][point] = image[252][770]	
+				self.importExternalTexture(group)
+			elif (groupKey in isHiddenTitltedRoofGroupMap):
+				self.importExternalTextureFromImage(group, "images/roofTexture.jpg")
 			else:
 				isGround = self.checkIfGround(group)
 				if isGround :
@@ -226,15 +228,21 @@ class PerspectiveProjector:
 		return False
 
 	def importExternalTexture(self, group):
+		if(group['direction'] == 'Upwards'):
+			self.importExternalTextureFromImage(group, "images/roofTexture.jpg")
+		elif(group['direction'] == 'West' or group['direction'] == 'East'):
+			self.importExternalTextureFromImage(group, "images/windowTexture2.jpg")
+		else:
+			self.importExternalTextureFromImage(group, "images/windowTexture.jpg")
+		return
+
+	def importExternalTextureFromImage(self, group, imageURL):
 		projectedCorners = group['projectedCorners']
 		srcGroupMap = group['projectedPoints']
 		groupColors = group['colors']
 		groupColors.clear()
-		
-		if(group['direction'] == 'Upwards'):
-			image = cv2.imread("images/roofTexture.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-		else:
-			image = cv2.imread("images/wallTexture.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+		image = cv2.imread(imageURL, cv2.CV_LOAD_IMAGE_COLOR)
 		height = image.shape[0]
 		width = image.shape[1]
 
@@ -263,7 +271,9 @@ class PerspectiveProjector:
 		for point in groupPoints:
 			if(point in groupColors):
 				color = groupColors[point]
-				if(color[0] <= color[1] and color[2] <= color[1]):
+				isGreenMaxValue = color[0] <= color[1] and color[2] <= color[1]
+				isDark = color[0] <= 40 and color[1] <= 40 and color[2] <= 40
+				if isGreenMaxValue or isDark :
 					greenCount += 1
 		if(greenCount / pointCount > 0.65):
 			return True
@@ -336,30 +346,6 @@ class PerspectiveProjector:
 
 		return
 
-	def handleSky(self, group):
-		srcGroupMap = []
-		for i in xrange(-self.IMAGE_ORIGINAL_WIDTH/2,self.IMAGE_ORIGINAL_WIDTH/2,1):
-			for j in range(-self.IMAGE_ORIGINAL_HEIGHT/2,self.IMAGE_ORIGINAL_HEIGHT/2,1):
-				srcGroupMap.append((i,j))
-
-		image = cv2.imread("images/bg.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-		height = image.shape[0]
-		width = image.shape[1]
-
-		src = self.verticalReshape([(-400, 300), (400, 300), (400, -300), (-400, -300)])
-		dst = self.verticalReshape([(0, 0), (width, 0), (width, height), (0, height)])
-		transformationMatrix, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
-		finalSrc = srcGroupMap
-		finalDst = np.int32(cv2.perspectiveTransform(self.verticalReshape(finalSrc), 
-																									transformationMatrix))
-		for i in range(len(finalDst)):
-				dstCoord = tuple(finalDst[i].ravel())
-				if self.isOutOfFrame(dstCoord, width, height):
-					continue
-				srcCoord = finalSrc[i]
-				group[srcCoord] = image[dstCoord[1]][dstCoord[0]]
-		return 
-
 	def isOutOfFrame(self, point, width  = 800, 
 																height = 600):
 		return (point[0] < 0 	or point[0] >= width 
@@ -412,7 +398,6 @@ class PerspectiveProjector:
 		result  = {}
 		zBuffer = {}
 		print "Start Performing Perspective Projection..."
-		self.handleSky(result)
 		orientation = np.asarray(orientation)
 		################################
 		#	 	Projection for each group  #
