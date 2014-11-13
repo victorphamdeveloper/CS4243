@@ -321,7 +321,7 @@ class PerspectiveProjector:
 		width = image.shape[1]
 
 		src = self.verticalReshape(projectedCorners)
-		dst = self.verticalReshape([(0, 0), (width, 0), (width, height), (0, height)])
+		dst = self.verticalReshape([(0, 0), (0, height), (width, height), (width, 0)])
 		transformationMatrix, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
 		finalSrc = srcGroupMap.keys()
 		finalDst = np.int32(cv2.perspectiveTransform(self.verticalReshape(finalSrc), 
