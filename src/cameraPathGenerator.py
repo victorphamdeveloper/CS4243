@@ -28,7 +28,7 @@ class CameraPathGenerator:
     """
     def generateCameraPath(self):
         point1 = ((self.IMAGE_ORIGINAL_WIDTH * 2.5 / 5.0, 
-                   self.IMAGE_ORIGINAL_HEIGHT * 8.0 / 10.0, 
+                   self.IMAGE_ORIGINAL_HEIGHT * 7.0 / 10.0, 
                    0), 0)
         point2 = ((self.IMAGE_ORIGINAL_WIDTH * 3.75 / 5.0, 
                    self.IMAGE_ORIGINAL_HEIGHT * 9 / 10.0, 
