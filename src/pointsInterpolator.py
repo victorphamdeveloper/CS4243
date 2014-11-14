@@ -10,6 +10,7 @@ import cv2.cv as cv
 #                   Point Interpolator                    #
 ###########################################################
 class PointsInterpolator:
+	# Constructor
 	def __init__(self, isTestingLayout):
 		self.isTestingLayout = isTestingLayout
 		return
@@ -139,11 +140,14 @@ class PointsInterpolator:
 		group['points'] = interpolatedPoints
 		return
 
+	# For loop for double value
 	def _drange(self, x, y, jump):
 		while x < y:
 			yield x
 			x += jump
 
+	# Function to check whether a point is lying inside 
+	# a polygon indicated by its corners
 	@staticmethod
 	def pointInPolygon(x, y, poly):
 	    polySides = len(poly)

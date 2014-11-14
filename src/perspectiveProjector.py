@@ -25,6 +25,7 @@ class PerspectiveProjector:
 	IMAGE_ORIGINAL_HEIGHT = 600
 	IMAGE_ORIGINAL_HALF_HEIGHT = IMAGE_ORIGINAL_HEIGHT / 2
 
+	# Constructor
 	def __init__(self, isTestingLayout):
 		self.FOCAL_LENGTH = 800.0 # default focal length
 		self.isTestingLayout = isTestingLayout
@@ -227,7 +228,8 @@ class PerspectiveProjector:
 		if(float(numUnpaintedPoints) / numPoints > 0.1):
 			return True
 		return False
-		
+	
+	# Import external texture to the group basing on its characteristic
 	def importExternalTexture(self, group):
 		if(group['direction'] == 'Upwards'):
 			self.importExternalTextureFromImage(group, "images/roofTexture.jpg")
@@ -237,6 +239,7 @@ class PerspectiveProjector:
 			self.importExternalTextureFromImage(group, "images/windowTexture.jpg")
 		return
 
+	# Import external texture to the group from the given URL of the texture
 	def importExternalTextureFromImage(self, group, imageURL):
 		projectedCorners = group['projectedCorners']
 		srcGroupMap = group['projectedPoints']
@@ -263,6 +266,7 @@ class PerspectiveProjector:
 
 		return
 
+	# Check if the indicated group representing a tree
 	def checkIfTree(self, group):
 		groupPoints = group['points']
 		groupColors = group['colors']
@@ -281,6 +285,7 @@ class PerspectiveProjector:
 		else:
 			return False
 
+	# Handle coloring for a group representing a tree
 	def handleTree(self, group):
 		projectedCorners = group['projectedCorners']
 		srcGroupMap = group['projectedPoints']
@@ -314,6 +319,7 @@ class PerspectiveProjector:
 
 		return
 
+	# Check if the indicated group representing the ground
 	def checkIfGround(self, group):
 		groupCorners = group['corners']
 		for corner in groupCorners:
@@ -321,42 +327,24 @@ class PerspectiveProjector:
 				return False
 		return True
 
+	# Handle coloring for a group representing the ground
 	def handleGround(self, group):
-		projectedCorners = group['projectedCorners']
-		srcGroupMap = group['projectedPoints']
-		groupColors = group['colors']
-		groupColors.clear()
-
-		image = cv2.imread("images/groundTexture.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-		height = image.shape[0]
-		width = image.shape[1]
-
-		src = self.verticalReshape(projectedCorners)
-		dst = self.verticalReshape([(0, 0), (0, height), (width, height), (width, 0)])
-		transformationMatrix, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
-		finalSrc = srcGroupMap.keys()
-		finalDst = np.int32(cv2.perspectiveTransform(self.verticalReshape(finalSrc), 
-																									transformationMatrix))
-		for i in range(len(finalDst)):
-				dstCoord = tuple(finalDst[i].ravel())
-				if self.isOutOfFrame(dstCoord, width, height):
-					continue
-				srcCoord = finalSrc[i]
-				for point in srcGroupMap[srcCoord]:
-					groupColors[tuple(point)] = image[dstCoord[1]][dstCoord[0]]
-
+		self.importExternalTextureFromImage(group, "images/groundTexture.jpg")
 		return
+
 	#Check if a point is out of the window frame or not
 	def isOutOfFrame(self, point, width  = 800, 
 																height = 600):
 		return (point[0] < 0 	or point[0] >= width 
 													or point[1] < 0 
 													or point[1] >= height)
-	#Reshape array to 2-column matrix
+
+	# Reshape array to 2-column matrix
 	def verticalReshape(self, arr):
 		return np.float32(arr).reshape(-1, 1, 2)
 
-		
+	# Testing the alignment layout of groups by justing assigning random colors
+	# instead of processing the image
 	def testAlignmentByUsingDefaultColor(self, data):
 		for key, group in data.iteritems():
 			colorData = {}

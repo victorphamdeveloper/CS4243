@@ -13,10 +13,13 @@ class VideoGenerator:
     FRAME_WIDTH = 800
     FRAME_HEIGHT = 600
 
+    # Constructor
     def __init__(self):
         print "Initialize Video Generator Process"
         return
 
+    # Main function for generating videos 
+    # from given indicated frames in sorted order
     def generateVideo(self, frames):
         # Initialize Video Writer
         if _platform == "linux" or _platform == "linux2":

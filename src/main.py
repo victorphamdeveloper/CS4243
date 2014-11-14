@@ -26,6 +26,7 @@ class CS4243Project(QtGui.QWidget):
 	IMAGE_ORIGINAL_WIDTH = 800
 	IMAGE_ORIGINAL_HEIGHT = 600
 
+	# Mouse Press Event Handler to draw points on the image
 	def mousePressEvent(self, event):
 		super(CS4243Project, self).mousePressEvent(event)
 		heightDist = int((self.screenSize.height() - self.imageSize.height()) / 2.0)
@@ -48,6 +49,7 @@ class CS4243Project(QtGui.QWidget):
 
 		return
 
+	# Handler for drawing points on the image represnting chosen corners
 	def drawPoints(self):
 		chosenElement = str(self.groupComboBox.currentText())
 		if(chosenElement == 'All'):
@@ -56,6 +58,7 @@ class CS4243Project(QtGui.QWidget):
 			self.drawPointsForGroup(chosenElement)
 		return
 
+	# Handler for drawing all points in the image for every group
 	def drawPointsForAll(self):
 		imagePixmap = QtGui.QPixmap('images/project.jpg')
 		imagePixmap = imagePixmap.scaledToHeight(self.IMAGE_ORIGINAL_HEIGHT, 
@@ -73,6 +76,7 @@ class CS4243Project(QtGui.QWidget):
 		self.image.setPixmap(imagePixmap)
 		return
 
+	# Handler for drawing points for a particular group
 	def drawPointsForGroup(self, group):
 		imagePixmap = QtGui.QPixmap('images/project.jpg')
 		imagePixmap = imagePixmap.scaledToHeight(self.IMAGE_ORIGINAL_HEIGHT, 
@@ -89,11 +93,13 @@ class CS4243Project(QtGui.QWidget):
 		self.image.setPixmap(imagePixmap)
 		return
 
+	# Constructor
 	def __init__(self):
 		super(CS4243Project, self).__init__()
 		self.initVariables()
 		self.initUI()
 
+	# Intialize the necessary variable
 	def initVariables(self):
 		self.screenSize = QtGui.QDesktopWidget().screenGeometry()
 		self.groups = 	{
@@ -105,6 +111,7 @@ class CS4243Project(QtGui.QWidget):
 		self.groups['Group 1']['points'].itemChanged.connect(self.changeCoords)
 		return
 
+	# Initialize the interface
 	def initUI(self):
 		# Create Display Image
 		self.initImage()
@@ -124,6 +131,7 @@ class CS4243Project(QtGui.QWidget):
 		self.setWindowTitle('CS4243 Project')
 		self.show()
 
+	# Intialize the display image
 	def initImage(self):
 		labelImage = QtGui.QLabel()
  		imagePixmap = QtGui.QPixmap('images/project.jpg')
@@ -140,6 +148,7 @@ class CS4243Project(QtGui.QWidget):
  		self.image = labelImage
  		return
 
+ 	# Intialize the sidebar containing controls of the application
 	def initSideBar(self):
 		vbox = QtGui.QVBoxLayout()
 		vbox.setAlignment(QtCore.Qt.AlignTop)
@@ -293,6 +302,7 @@ class CS4243Project(QtGui.QWidget):
 
 		return
 
+	# Update group when there is a new selection in the current group
 	def updateGroup(self, changedIndex):
 		# Clear group info
 		groupInfo = self.sideBar.itemAt(1)
@@ -339,6 +349,9 @@ class CS4243Project(QtGui.QWidget):
 
 		return
 
+	###########################################################
+	#                   LOAD FUNCTIONS		                    #		
+	###########################################################
 	def load(self):
 		selection = str(self.groupComboBox.currentText())
 		if(selection == 'All'):
@@ -401,6 +414,9 @@ class CS4243Project(QtGui.QWidget):
 
 		self.drawPoints()
 
+	###########################################################
+	#                   SAVE FUNCTIONS		                    #		
+	###########################################################
 	def save(self):
 		selection = str(self.groupComboBox.currentText())
 		if(selection == 'All'):
@@ -451,12 +467,13 @@ class CS4243Project(QtGui.QWidget):
 		dataGenerator = DataGenerator()
 		dataGenerator.saveDataToFile('data/allData.json', groupsData)
 
-
+	# Update the direction when there is a new selection in current group
 	def updateDirection(self, changedIndex):
 		currentGroup = self.groups[str(self.groupComboBox.currentText())]
 		currentGroup['direction'] = self.DIRECTIONS[changedIndex]
 		return
 
+	# Clear the layout of table containg info about points in a group
 	def clearLayout(self, layout):
 	    if layout is not None:
 	        while layout.count():
@@ -466,7 +483,9 @@ class CS4243Project(QtGui.QWidget):
 	                widget.deleteLater()
 	            else:
 	                self.clearLayout(item.layout())
+	    return
 
+	# Handler function for event when the add button for group is clicked
 	def addButtonClicked(self):
 		numItems = self.groupComboBox.count()
 		self.groupComboBox.insertItem(self.groupComboBox.count() - 1, 
@@ -478,11 +497,12 @@ class CS4243Project(QtGui.QWidget):
 		self.groups['Group ' + str(numItems)]['points'].itemChanged.connect(self.changeCoords)
 		return
 
+	# Handler function for event when coordinates of a point are changed
 	def changeCoords(self, item):
 		self.drawPoints()
 		return
 
-
+# Open the application
 def main():
 	print "Open application..."
 	app = QtGui.QApplication(sys.argv)

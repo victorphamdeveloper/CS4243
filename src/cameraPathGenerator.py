@@ -16,6 +16,7 @@ class CameraPathGenerator:
     IMAGE_ORIGINAL_WIDTH = 800
     IMAGE_ORIGINAL_HEIGHT = 600
 
+    # Constructor
     def __init__(self):
         return
     
@@ -85,10 +86,13 @@ class CameraPathGenerator:
         return generatedPoints
     
     ##################### SUPPORT FUNCTIONS ##############################
+    # Retrieve corresponding quaternion from angle and rotational axis
+    # The rotational axis here is conveniently set as Y-axis
     def _angleToQuatMat(self, angle):
         worldQuat = [math.cos(angle/2.0), 0, math.sin(angle/2.0), 0]
         return self._quat2rot(worldQuat)
 
+    # Function to create rotation matrix from quaternion
     def _quat2rot(self, q):
         result = np.matrix(np.zeros([3,3]))
         result[0, 0] = q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]
