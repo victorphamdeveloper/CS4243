@@ -217,6 +217,7 @@ class PerspectiveProjector:
 		print "Finish filling color"
 		return
 
+	#Detect hidden surface in a group by checking the density of colored pixels in this group 
 	def checkIfHiddenSurfaceNeedExternalTexture(self, group):
 		numPoints = len(group['points'])
 		numUnpaintedPoints = 0
@@ -226,7 +227,7 @@ class PerspectiveProjector:
 		if(float(numUnpaintedPoints) / numPoints > 0.1):
 			return True
 		return False
-
+		
 	def importExternalTexture(self, group):
 		if(group['direction'] == 'Upwards'):
 			self.importExternalTextureFromImage(group, "images/roofTexture.jpg")
@@ -345,16 +346,17 @@ class PerspectiveProjector:
 					groupColors[tuple(point)] = image[dstCoord[1]][dstCoord[0]]
 
 		return
-
+	#Check if a point is out of the window frame or not
 	def isOutOfFrame(self, point, width  = 800, 
 																height = 600):
 		return (point[0] < 0 	or point[0] >= width 
 													or point[1] < 0 
 													or point[1] >= height)
-
+	#Reshape array to 2-column matrix
 	def verticalReshape(self, arr):
 		return np.float32(arr).reshape(-1, 1, 2)
 
+		
 	def testAlignmentByUsingDefaultColor(self, data):
 		for key, group in data.iteritems():
 			colorData = {}
